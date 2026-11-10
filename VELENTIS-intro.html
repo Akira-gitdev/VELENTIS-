@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Velentis intro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Rajdhani:wght@600&family=Unbounded:wght@300&display=swap">
+<style>
+/* Layout: a fixed background of thin gold line work (stepped lines, honeycomb, diamond grid) behind one centred column. A slim compass rim spins with the clock hands, all stop together, hold, then the rim fades just before the V slides to the middle. */
+:root {
+  --space: #F5F5F2; --ink: #111112; --muted: #6A6A65; --line: rgba(0,0,0,.14);
+  --rim: #111112; --halo: rgba(0,0,0,.05); --btn: rgba(0,0,0,.05); --btn-hover: rgba(0,0,0,.09);
+  --lit: #FFFFFF; --lit-o: .95; --sweep: rgba(255,255,255,.95);
+  --gold: #9A6F1E; --gold-hi: #6E4C0A; --gold-lo: #7A5612; --neon: #FF9A1A; --neon-core: #D97706;
+  --fb0: #1D4ED8; --fb1: #8A5700; --fb2: #C2410C;
+  --display: 'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --tech: 'Rajdhani', 'Arial Narrow', system-ui, sans-serif;
+  --body: 'Manrope', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --space: #0A0A0B; --ink: #F4F4F2; --muted: #A1A19C; --line: rgba(255,255,255,.16);
+    --rim: #F4F4F2; --halo: rgba(255,255,255,.07); --btn: rgba(255,255,255,.06); --btn-hover: rgba(255,255,255,.1);
+    --lit: #FFFFFF; --lit-o: .13; --sweep: rgba(255,255,255,.13);
+    --gold: #D9B26A; --gold-hi: #F6DFA8; --gold-lo: #8F6B2E; --neon: #FFB62E; --neon-core: #FFF2C9;
+    --fb0: #3B82F6; --fb1: #F5C542; --fb2: #FF7A1A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --space: #0A0A0B; --ink: #F4F4F2; --muted: #A1A19C; --line: rgba(255,255,255,.16);
+  --rim: #F4F4F2; --halo: rgba(255,255,255,.07); --btn: rgba(255,255,255,.06); --btn-hover: rgba(255,255,255,.1);
+  --lit: #FFFFFF; --lit-o: .13; --sweep: rgba(255,255,255,.13);
+  --gold: #D9B26A; --gold-hi: #F6DFA8; --gold-lo: #8F6B2E; --neon: #FFB62E; --neon-core: #FFF2C9;
+  --fb0: #3B82F6; --fb1: #F5C542; --fb2: #FF7A1A; color-scheme: dark;
+}
+html, body { height: 100%; }
+html { background: var(--space); }
+body {
+  margin: 0; box-sizing: border-box; height: 100%; overflow: hidden; background: var(--space); color: var(--ink); font: 16px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 56px;
+}
+.page { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+h1, h2, p, figure { margin: 0; }
+
+.deco {
+  position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+}
+.finish { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.fin-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .fin-light { display: none; }
+  :root:not([data-theme="light"]) .fin-dark { display: inline; }
+}
+:root[data-theme="dark"] .fin-light { display: none; }
+:root[data-theme="dark"] .fin-dark { display: inline; }
+:root[data-theme="light"] .fin-dark { display: none; }
+.dstroke { stroke: var(--gold); fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.dhi { stroke: var(--gold-hi); fill: none; stroke-linecap: round; }
+.dfill { fill: var(--gold); }
+.breathe { animation: breathe 6s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { opacity: .12; } 50% { opacity: .7; } }
+.trav { animation: travel 8s linear infinite; }
+@keyframes travel { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+.twk { animation: twk 4s ease-in-out infinite; }
+@keyframes twk { 0%, 100% { opacity: .12; } 50% { opacity: 1; } }
+.hex { stroke: var(--gold); fill: var(--gold); fill-opacity: 0; stroke-opacity: .42; stroke-width: 1; stroke-linejoin: round; }
+.hex.lit { animation: hexlit 2.8s ease-in-out both; }
+@keyframes hexlit { 0%, 100% { stroke-opacity: .42; fill-opacity: 0; } 40% { stroke-opacity: 1; fill-opacity: .24; } }
+
+.bar { width: 100%; display: flex; justify-content: flex-end; margin-bottom: 4px; }
+.theme { min-height: 44px; padding: 0 18px; border-radius: 22px; cursor: pointer; border: 1px solid var(--line); background: var(--btn); color: var(--ink); font: 500 13px/1 var(--body); letter-spacing: .04em; }
+.theme:hover { background: var(--btn-hover); }
+.theme:focus-visible, .replay:focus-visible { outline: 2px solid var(--fb0); outline-offset: 3px; }
+
+.stage { position: relative; isolation: isolate; width: min(100%, 420px, 58vh); aspect-ratio: 1 / 1; color: var(--rim); }
+.stage::before { content: ""; position: absolute; inset: 4%; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, var(--halo), transparent 72%); }
+.stage svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.lit0 { stop-color: var(--lit); stop-opacity: var(--lit-o); }
+.lit1 { stop-color: var(--lit); stop-opacity: 0; }
+
+.sweep { position: absolute; inset: 7%; border-radius: 50%; overflow: hidden; pointer-events: none; opacity: 0; }
+.sweep::before { content: ""; position: absolute; top: -25%; bottom: -25%; left: calc(var(--sx, -45) * 1%); width: 32%; transform: skewX(-18deg); filter: blur(7px);
+  background: linear-gradient(90deg, transparent, var(--sweep), transparent); }
+
+.lockup { margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.word {
+  font: 300 clamp(24px, 7.6vw, 38px)/1.1 var(--display); letter-spacing: .5em; margin-right: -.5em; color: var(--ink);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 1s ease, transform 1s ease, letter-spacing 1.4s ease, margin-right 1.4s ease;
+}
+.word.on { opacity: 1; transform: none; letter-spacing: .3em; margin-right: -.3em; }
+.from { display: flex; align-items: baseline; gap: 12px; opacity: 0; transform: translateY(6px); transition: opacity .9s ease, transform .9s ease; }
+.from.on { opacity: 1; transform: none; }
+.from span { font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+.fb {
+  font: 600 15px/1.2 var(--tech); letter-spacing: .36em; margin-right: -.36em;
+  background: linear-gradient(90deg, var(--fb0) 0%, var(--fb1) 55%, var(--fb2) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+}
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .fb { color: #E5B25D; -webkit-text-fill-color: currentColor; }
+}
+
+.replay { margin-top: 30px; min-height: 44px; padding: 0 26px; border-radius: 22px; cursor: pointer; border: 1px solid var(--line); background: var(--btn); color: var(--ink); font: 500 14px/1 var(--body); letter-spacing: .04em; }
+.replay:hover { background: var(--btn-hover); }
+
+.icons { margin-top: 48px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
+.eyebrow { font: 500 12px/1.3 var(--body); text-transform: uppercase; letter-spacing: .18em; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; }
+figure { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+figure svg { width: 104px; height: 104px; display: block; }
+figcaption { font-size: 13px; color: var(--muted); }
+.note { max-width: 36ch; color: var(--muted); font-size: 14px; }
+
+.skip { position: fixed; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); text-align: center; font: 500 12px/1 var(--body); letter-spacing: .08em; color: var(--muted); opacity: 0; animation: skipin .6s ease 1.2s forwards; pointer-events: none; z-index: 2; }
+@keyframes skipin { to { opacity: .8; } }
+.instant * { transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .sweep { display: none; } .deco * { animation: none !important; } .breathe, .twk { opacity: .45; } }
+</style>
+</head>
+<body>
+
+<svg class="finish" id="finish" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="mbBase" cx=".5" cy=".4" r=".85"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#F4F3EF"/><stop offset="1" stop-color="#E4E2DC"/></radialGradient>
+    <linearGradient id="mbSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".7"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <filter id="mbVein" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".004 .009" numOctaves="5" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="g"/>
+      <feComponentTransfer in="g" result="v"><feFuncR type="table" tableValues="1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1"/><feFuncG type="table" tableValues="1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1"/><feFuncB type="table" tableValues="1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1"/></feComponentTransfer>
+      <feColorMatrix in="v" type="matrix" values="0 0 0 0 .30  0 0 0 0 .31  0 0 0 0 .36  -1 0 0 0 1" result="a"/>
+      <feGaussianBlur in="a" stdDeviation=".5"/>
+    </filter>
+    <filter id="mbVein2" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".013 .022" numOctaves="4" seed="3" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="g"/>
+      <feComponentTransfer in="g" result="v"><feFuncR type="table" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1"/><feFuncG type="table" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1"/><feFuncB type="table" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1"/></feComponentTransfer>
+      <feColorMatrix in="v" type="matrix" values="0 0 0 0 .42  0 0 0 0 .42  0 0 0 0 .46  -1 0 0 0 1"/>
+    </filter>
+    <radialGradient id="obBase" cx=".5" cy=".38" r=".9"><stop offset="0" stop-color="#1B1B1F"/><stop offset=".5" stop-color="#0C0C0E"/><stop offset="1" stop-color="#030304"/></radialGradient>
+    <linearGradient id="obSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".36" stop-color="#fff" stop-opacity="0"/><stop offset=".43" stop-color="#fff" stop-opacity=".075"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#fff" stop-opacity=".035"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="obTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".05"/><stop offset=".2" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <filter id="obGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="5"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 0"/></filter>
+  </defs>
+  <g class="fin-light">
+    <rect width="100%" height="100%" fill="url(#mbBase)"/>
+    <rect width="100%" height="100%" filter="url(#mbVein)" opacity=".4"/>
+    <rect width="100%" height="100%" fill="url(#mbSheen)" opacity=".5"/>
+  </g>
+  <g class="fin-dark">
+    <rect width="100%" height="100%" fill="url(#obBase)"/>
+    <rect width="100%" height="100%" fill="url(#obSheen)"/>
+    <rect width="100%" height="100%" fill="url(#obTop)"/>
+  </g>
+</svg>
+
+<svg class="deco" id="deco" aria-hidden="true" focusable="false"></svg>
+
+<main class="page">
+  <div class="stage" id="stage">
+    <svg viewBox="0 0 480 480" role="img" aria-label="Velentis logo: a slim compass rim spins with the clock hands, all stop together, the rim fades and the hands slide down as the letter V">
+      <defs><radialGradient id="lit"><stop class="lit0" offset="0"/><stop class="lit1" offset="1"/></radialGradient></defs>
+      <circle id="litc" cx="240" cy="240" r="172" fill="url(#lit)" opacity="0"/>
+      <g id="rings"></g>
+      <circle id="hair" cx="240" cy="240" r="116" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0"/>
+      <g id="shift">
+        <g id="hands" opacity="0"></g>
+        <g id="hub" opacity="0" transform="translate(240 240)"><circle r="11" fill="currentColor"/><circle r="6" style="fill:var(--space)"/></g>
+      </g>
+    </svg>
+    <div class="sweep" id="sweep" aria-hidden="true"></div>
+  </div>
+
+  <div class="lockup">
+    <h1 class="word" id="word">VELENTIS</h1>
+    <p class="from" id="from"><span>from</span><b class="fb">FLAMEBOUNDS</b></p>
+  </div>
+
+</main>
+<p class="skip" aria-hidden="true">Tap anywhere to skip</p>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var CX = 240, CY = 240, RO = 140, RI = 129, RT = 232, LEN = 94, DROP = 38;
+  var SPIN0 = .3, LOCK = 2.6;
+  var FADE0 = LOCK + .6, FADE_D = .25, TAIL0 = LOCK + .6, SLIDE0 = LOCK + .8;
+  var SWEEP0 = SLIDE0 + .15, SWEEP_D = 1.7;
+  var WORD = SLIDE0 + .9, FROM = SLIDE0 + 1.6, END = SLIDE0 + 2.7;
+
+  function $(id) { return document.getElementById(id); }
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function eio(u) { return u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
+  function eoc(u) { return 1 - Math.pow(1 - u, 3); }
+  function sine(u) { return (1 - Math.cos(Math.PI * u)) / 2; }
+  function mk(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function P(r, deg) { var a = deg * Math.PI / 180; return [r * Math.sin(a), -r * Math.cos(a)]; }
+  function f(p) { return p[0].toFixed(2) + ',' + p[1].toFixed(2); }
+  function poly(pts, extra) {
+    var a = { points: pts.map(f).join(' '), fill: 'currentColor' };
+    for (var k in extra) a[k] = extra[k];
+    return mk('polygon', a);
+  }
+
+  var reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  /* ---------- background: three line patterns, each lit by a travelling band of light ---------- */
+  var deco = $('deco'), dW = 0, dH = 0, decoStart = performance.now(), decoRaf = 0, D = null;
+  var DECO0 = LOCK - .55, REVEAL = 1.45, SWEEP = 1.0, PERIOD = 3.0;
+
+  function rounded(pts, r) {
+    var d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    for (var i = 1; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+      var l1 = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), l2 = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+      var rr = Math.min(r, l1 / 2, l2 / 2);
+      var a = [p1[0] + (p0[0] - p1[0]) * rr / l1, p1[1] + (p0[1] - p1[1]) * rr / l1];
+      var b = [p1[0] + (p2[0] - p1[0]) * rr / l2, p1[1] + (p2[1] - p1[1]) * rr / l2];
+      d += ' L' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' Q' + p1[0].toFixed(1) + ' ' + p1[1].toFixed(1) + ' ' + b[0].toFixed(1) + ' ' + b[1].toFixed(1);
+    }
+    var last = pts[pts.length - 1];
+    return d + ' L' + last[0].toFixed(1) + ' ' + last[1].toFixed(1);
+  }
+  function stepPts(x, y, span) {
+    var pts = [[x, y]], covered = 0;
+    while (covered < span) {
+      var L = rnd(100, 170); x += L; y -= L; pts.push([x, y]); covered += L;
+      var L2 = rnd(34, 62); x += L2; y += L2; pts.push([x, y]); covered += L2;
+    }
+    return pts;
+  }
+  function stops(parent, list) {
+    list.forEach(function (s) { mk('stop', { offset: s[0], 'stop-color': s[1], 'stop-opacity': s[2] == null ? 1 : s[2] }, parent); });
+  }
+  function lin(defs, id, x1, y1, x2, y2, list) {
+    var g = mk('linearGradient', { id: id, gradientUnits: 'userSpaceOnUse', x1: x1, y1: y1, x2: x2, y2: y2 }, defs);
+    stops(g, list); return g;
+  }
+  function rad(defs, id, cx, cy, r, list) {
+    var g = mk('radialGradient', { id: id, gradientUnits: 'userSpaceOnUse', cx: cx, cy: cy, r: r }, defs);
+    stops(g, list); return g;
+  }
+  function maskRect(defs, id, fill) {
+    var m = mk('mask', { id: id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: dW, height: dH }, defs);
+    mk('rect', { width: dW, height: dH, fill: fill }, m);
+    return m;
+  }
+  function lineTo(parent, d, dn, dl) {
+    var el = mk('path', { d: d, pathLength: 1000, 'stroke-dasharray': 1000, 'stroke-dashoffset': 1000 }, parent);
+    D.lines.push({ el: el, dn: dn, dl: dl || 0 });
+  }
+  function use(parent, id, w, color) {
+    var u = mk('use', { href: '#' + id, fill: 'none', 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, parent);
+    u.style.stroke = color; return u;
+  }
+
+  /* 1: honeycomb, bottom left */
+  function patHex(defs, R) {
+    var g = mk('g', { id: 'pat1' }, defs);
+    var s = Math.max(19, Math.min(26, dW / 15)), w = Math.sqrt(3) * s;
+    var cols = Math.ceil(R / w) + 2, rows = Math.ceil(R / (s * 1.5)) + 2;
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var cx = -w * .5 + w * (c + (r % 2 ? .5 : 0)), cy = dH + s * .5 - s * 1.5 * r;
+        var dn = Math.hypot(cx, cy - dH) / R;
+        if (dn > 1) continue;
+        var pts = '';
+        for (var k = 0; k < 6; k++) {
+          var an = (-90 + 60 * k) * Math.PI / 180;
+          pts += (cx + s * .95 * Math.cos(an)).toFixed(1) + ',' + (cy + s * .95 * Math.sin(an)).toFixed(1) + ' ';
+        }
+        var el = mk('polygon', { points: pts }, g);
+        el.style.opacity = 0;
+        D.cells.push({ el: el, dn: dn, dl: 0 });
+      }
+    }
+  }
+
+  /* 2: diamond lattice, top right */
+  function patDiamond(defs, R) {
+    var g = mk('g', { id: 'pat2' }, defs), m = .5774, sx = R / 2.5, i;
+    for (i = 0; i * sx < R; i++) {
+      var x = dW - i * sx;
+      lineTo(g, 'M' + x.toFixed(1) + ' -10 L' + x.toFixed(1) + ' ' + (R + 10).toFixed(1), i * sx / R);
+    }
+    for (i = -1; dW - i * sx > dW - R * 1.9; i++) {
+      var x0 = dW - i * sx, dn = Math.min(1.1, Math.abs(i * sx) / (R * 1.4));
+      lineTo(g, 'M' + (x0 - 10 / m).toFixed(1) + ' -10 L' + (x0 + (R + 10) / m).toFixed(1) + ' ' + (R + 10).toFixed(1), dn);
+      lineTo(g, 'M' + (x0 + 10 / m).toFixed(1) + ' -10 L' + (x0 - (R + 10) / m).toFixed(1) + ' ' + (R + 10).toFixed(1), dn);
+    }
+  }
+
+  /* 3: circuit traces run in from the left and right edges at a shallow angle and stop short of the clock.
+     The dotted (pad) end of every line faces the clock; the far end zig-zags and forks off-screen. */
+  function patCircuit(defs, Cx, Cy, clear) {
+    var g = mk('g', { id: 'pat3' }, defs), gap = 7, TH = 27 * Math.PI / 180, ca = Math.cos(TH), sa = Math.sin(TH), DL = .5;
+    var Uout = Math.hypot(dW, dH);
+    function S(q) { return [Cx + q[0] * ca - q[1] * sa, Cy + q[0] * sa + q[1] * ca]; }
+    function uEnd(v) { return Math.sqrt(Math.max(0, clear * clear - v * v)); }
+    function pad(q, dn) {
+      var o = S(q), c = mk('circle', { cx: o[0].toFixed(1), cy: o[1].toFixed(1), r: 3 }, g);
+      c.style.opacity = 0; D.cells.push({ el: c, dn: dn, dl: DL });
+    }
+    function ok(q) { return Math.hypot(q[0], q[1]) > clear + 12; }
+    [-1, 1].forEach(function (dir) {
+      [24, 68, 108].forEach(function (off, bi) {
+        var lanes = bi === 1 ? 2 : 3, lim = clear - 22 - (lanes - 1) * gap;
+        var u = dir * Uout * .6, v = dir * off, pts = [[u, v]], joints = [];
+        while (Math.abs(u) > uEnd(v) + 96) {
+          u -= dir * rnd(34, 60); pts.push([u, v]); joints.push(pts.length - 1);
+          var j = rnd(9, 14), sg = Math.random() < .5 ? -1 : 1;
+          if (Math.abs(v + sg * j * dir - dir * off) > 12 || Math.abs(v + sg * j * dir) > lim) sg = -sg;
+          if (Math.abs(u) - j <= uEnd(v + sg * j * dir) + 14) break;
+          u -= dir * j; v += sg * j * dir; pts.push([u, v]);
+        }
+        var fin = [dir * uEnd(v), v];
+        for (var l = 0; l < lanes; l++) {
+          var lp = pts.map(function (q) { return [q[0], q[1] + dir * l * gap]; });
+          var vl = v + dir * l * gap; lp.push([dir * uEnd(vl), vl]);
+          lineTo(g, rounded(lp.map(S), 6), bi * .06 + l * .02, DL);
+          pad(lp[lp.length - 1], 1);
+        }
+        // forks off the trunk: a Y, a hook, or two prongs (never closer to the clock than the pads)
+        joints.forEach(function (ji) {
+          if (Math.random() > .5) return;
+          var q = pts[ji], sg = Math.random() < .5 ? -1 : 1, d1 = rnd(20, 34), d2 = rnd(18, 40), t = Math.random();
+          var p1 = [q[0] - dir * d1, q[1] + sg * d1], dn = .1 + Math.abs(q[0]) / Uout * .5;
+          if (!ok(p1)) { sg = -sg; p1 = [q[0] - dir * d1, q[1] + sg * d1]; }
+          if (!ok(p1)) return;
+          if (t < .5) {
+            var p2 = [p1[0] - dir * d2, p1[1]];
+            if (!ok(p2)) return;
+            lineTo(g, rounded([S(q), S(p1), S(p2)], 5), dn, DL); pad(p2, .9);
+          } else if (t < .8) {
+            var p3 = [p1[0] - dir * d2 * .8, p1[1] - sg * d2 * .8];
+            if (!ok(p3)) return;
+            lineTo(g, rounded([S(q), S(p1), S(p3)], 5), dn, DL); pad(p3, .9);
+          } else {
+            var pa = [p1[0] - dir * d2, p1[1]], pb = [p1[0] - dir * d2 * .7, p1[1] + sg * d2 * .7];
+            if (!ok(pa) || !ok(pb)) return;
+            lineTo(g, rounded([S(q), S(p1), S(pa)], 5), dn, DL); lineTo(g, rounded([S(p1), S(pb)], 5), dn + .05, DL);
+            pad(pa, .9); pad(pb, .92);
+          }
+        });
+      });
+    });
+  }
+
+  function buildDeco() {
+    dW = document.documentElement.clientWidth; dH = window.innerHeight;
+    cancelAnimationFrame(decoRaf);
+    while (deco.firstChild) deco.removeChild(deco.firstChild);
+    deco.setAttribute('viewBox', '0 0 ' + dW + ' ' + dH);
+    D = { cells: [], lines: [], strips: [], done: false, last: 0 };
+    var defs = mk('defs', {}, deco);
+    lin(defs, 'metal', 0, dH, dW, 0, [[0, 'var(--gold-lo)'], [.5, 'var(--gold)'], [1, 'var(--gold-lo)']]);
+
+    // each pattern keeps to its own corner or band, so they never overlap
+    var R = Math.min(dW * .8, dH * .3), Cx = dW / 2, Cy = dH * .43, clear = 140, W = 58, Lp = R * 1.15;
+    patHex(defs, R); patDiamond(defs, R); var sg = $('stage');
+    if (sg) { var rc = sg.getBoundingClientRect(); if (rc.width > 50) { Cx = rc.left + rc.width / 2; Cy = rc.top + rc.height / 2; clear = rc.width / 480 * 198; } }
+    D.maxDelay = .5;
+    patCircuit(defs, Cx, Cy, clear);
+
+    rad(defs, 'e1', 0, dH, R, [[0, '#fff'], [.55, '#c4c4c4'], [1, '#000']]);
+    rad(defs, 'e2', dW, 0, R, [[0, '#fff'], [.55, '#c4c4c4'], [1, '#000']]);
+    maskRect(defs, 'me1', 'url(#e1)'); maskRect(defs, 'me2', 'url(#e2)');
+    // circuits: soft top and bottom edges, and clear space right behind the V
+    maskRect(defs, 'me3', '#fff');
+
+    // a slim band of light travels across patterns 1 and 2, a ring pulses out through pattern 3
+    var dir1 = [Math.SQRT1_2, -Math.SQRT1_2], dir2 = [-Math.SQRT1_2, Math.SQRT1_2];
+    [[1, [0, dH], dir1, 0], [2, [dW, 0], dir2, 1]].forEach(function (c) {
+      var g = lin(defs, 's' + c[0], 0, 0, 1, 1, [[0, '#000'], [.36, '#4a4a4a'], [.5, '#fff'], [.64, '#4a4a4a'], [1, '#000']]);
+      maskRect(defs, 'ms' + c[0], 'url(#s' + c[0] + ')');
+      D.strips.push({ g: g, o: c[1], d: c[2], ph: c[3], L: Lp, W: W, key: '' });
+    });
+    D.ringMax = dW * .62; D.ringC = [dW / 2, Cy];
+    D.ringG = rad(defs, 'rg', D.ringC[0], D.ringC[1], 1, [[0, '#000'], [.7, '#000'], [.9, '#fff'], [1, '#000']]);
+    D.ringR = maskRect(defs, 'ms3', 'url(#rg)').firstChild; D.ringR.setAttribute('opacity', 0);
+
+    var root = mk('g', {}, deco);
+    [['1', .72, 1], ['2', .7, 1], ['3', .8, 1.1]].forEach(function (c) {
+      var g = mk('g', { mask: 'url(#me' + c[0] + ')' }, root);
+      if (c[0] === '3') { var sh = mk('g', { transform: 'translate(2 3)' }, g); var su = use(sh, 'pat3', 2.4, 'var(--gold-lo)'); su.setAttribute('opacity', .22); }
+      var base = use(g, 'pat' + c[0], c[2], 'url(#metal)'); base.setAttribute('opacity', c[1]);
+      var br = mk('g', { mask: 'url(#ms' + c[0] + ')' }, g);
+      use(br, 'pat' + c[0], c[2] + 5, 'var(--neon)').setAttribute('opacity', .13);
+      use(br, 'pat' + c[0], c[2] + 2.2, 'var(--neon)').setAttribute('opacity', .38);
+      use(br, 'pat' + c[0], c[2] + .4, 'var(--neon-core)');
+    });
+
+    if (reduce) { decoPaint(99, true); return; }
+    decoRaf = requestAnimationFrame(decoFrame);
+  }
+
+  function decoPaint(t, still) {
+    var fin = t >= REVEAL + D.maxDelay;
+    if (!fin || !D.done) {
+      D.cells.forEach(function (c) { var q = clamp((t - c.dl) / REVEAL) * 1.45; c.el.style.opacity = clamp((q - c.dn * .9) * 4).toFixed(3); });
+      D.lines.forEach(function (l) { var q = clamp((t - l.dl) / REVEAL) * 1.45; l.el.setAttribute('stroke-dashoffset', (1000 * (1 - eoc(clamp((q - l.dn * .9) * 2.2)))).toFixed(1)); });
+      D.done = fin;
+    }
+    D.strips.forEach(function (s) {
+      var u = t - .85 - s.ph, pos = -1e5;
+      if (!still && u >= 0) {
+        var c = u % PERIOD;
+        if (c < SWEEP) pos = -s.W + (s.L + 2 * s.W) * sine(c / SWEEP);
+      }
+      var key = pos < -1e4 ? 'off' : pos.toFixed(0);
+      if (key === s.key) return;
+      s.key = key;
+      s.g.setAttribute('x1', (s.o[0] + s.d[0] * (pos - s.W)).toFixed(1)); s.g.setAttribute('y1', (s.o[1] + s.d[1] * (pos - s.W)).toFixed(1));
+      s.g.setAttribute('x2', (s.o[0] + s.d[0] * (pos + s.W)).toFixed(1)); s.g.setAttribute('y2', (s.o[1] + s.d[1] * (pos + s.W)).toFixed(1));
+    });
+    var u3 = t - .85 - 2, k = -1;
+    if (!still && u3 >= 0) { var c3 = u3 % PERIOD; if (c3 < SWEEP * 1.3) k = c3 / (SWEEP * 1.3); }
+    if (k < 0) { if (D.ringOn) { D.ringR.setAttribute('opacity', 0); D.ringOn = false; } }
+    else { D.ringOn = true; D.ringG.setAttribute('r', Math.max(1, D.ringMax * eoc(k)).toFixed(1)); D.ringR.setAttribute('opacity', (1 - k * k).toFixed(3)); }
+  }
+  function decoFrame(now) {
+    decoRaf = requestAnimationFrame(decoFrame);
+    if (now - D.last < 30) return;
+    D.last = now;
+    decoPaint((now - decoStart) / 1000 - DECO0);
+  }
+
+  buildDeco();
+  var rt = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () {
+      if (Math.abs(document.documentElement.clientWidth - dW) > 40 || Math.abs(window.innerHeight - dH) > 140) buildDeco();
+    }, 250);
+  });
+
+  /* ---------- logo ---------- */
+  var hair = $('hair'), hub = $('hub'), shift = $('shift'), handsG = $('hands'), litc = $('litc'), sweep = $('sweep');
+
+  var ARCS = [{ D: 330 }, { D: -420 }, { D: 480 }, { D: -300 }];
+  ARCS.forEach(function (A, k) {
+    A.F = k * 90;
+    var span = 78, p0 = P(RO, 0), p1 = P(RO, span), p2 = P(RI, span), p3 = P(RI, 0);
+    var inner = mk('g', { 'fill-opacity': k % 2 ? .6 : 1 });
+    inner.appendChild(mk('path', { fill: 'currentColor', d: 'M' + f(p0) + ' A' + RO + ' ' + RO + ' 0 0 1 ' + f(p1) + ' L' + f(p2) + ' A' + RI + ' ' + RI + ' 0 0 0 ' + f(p3) + ' Z' }));
+    inner.appendChild(poly([P(RO - 4, 0), P(RT, 0), P(RO - 3, 7)]));
+    inner.appendChild(poly([P(RO - 3, 42), P(RO + 40, 46), P(RO - 3, 50)]));
+    A.g = mk('g', {});
+    A.g.appendChild(inner);
+    $('rings').appendChild(A.g);
+  });
+
+  var BL = [[0, -LEN], [-9, 4], [0, 4]], BR = [[0, -LEN], [9, 4], [0, 4]];
+  var TAIL = [[-5, 10], [-10, 19], [0, 36], [10, 19], [5, 10]];
+  function blade(op) {
+    var g = mk('g', { opacity: op });
+    g.appendChild(poly(BL, {}));
+    g.appendChild(poly(BR, { 'fill-opacity': .6 }));
+    return g;
+  }
+  var hands = [{ total: 1056, len: LEN, sc: true }, { total: 1464, len: LEN, sc: false }];
+  hands.forEach(function (h) {
+    h.ghosts = [.14, .06].map(function (o) { var g = blade(o); handsG.appendChild(g); return g; });
+    h.main = blade(1);
+    h.tail = mk('g', {});
+    h.tail.appendChild(poly(TAIL, { 'fill-opacity': .85 }));
+    h.main.appendChild(h.tail);
+    handsG.appendChild(h.main);
+  });
+
+  function ang(h, t) {
+    if (t <= SPIN0) return 0;
+    if (t < LOCK) return h.total * eio((t - SPIN0) / (LOCK - SPIN0));
+    return h.total;
+  }
+  function scl(h, t) { return h.sc ? .72 + .28 * eoc(clamp((t - (LOCK - .45)) / .5)) : 1; }
+  function put(g, a, s) { g.setAttribute('transform', 'translate(' + CX + ' ' + CY + ') rotate(' + a.toFixed(2) + ') scale(1 ' + s.toFixed(3) + ')'); }
+
+  function update(t) {
+    var fade = clamp(t / .5), u = clamp((t - SPIN0) / (LOCK - SPIN0));
+    var rimO = fade * (1 - clamp((t - FADE0) / FADE_D));
+    ARCS.forEach(function (A) {
+      A.g.setAttribute('transform', 'translate(' + CX + ' ' + CY + ') rotate(' + (A.F + A.D * (1 - sine(u))).toFixed(2) + ')');
+      A.g.setAttribute('opacity', rimO.toFixed(3));
+    });
+    hair.setAttribute('opacity', (.85 * rimO).toFixed(3));
+    handsG.setAttribute('opacity', fade.toFixed(3));
+    hub.setAttribute('opacity', fade.toFixed(3));
+
+    var tailS = Math.max(0, 1 - eoc(clamp((t - TAIL0) / .45)));
+    hands.forEach(function (h) {
+      var a = ang(h, t), s = scl(h, t);
+      put(h.main, a, s);
+      h.ghosts.forEach(function (g, k) { put(g, ang(h, t - .022 * (k + 1)), s); });
+      h.tail.setAttribute('transform', 'scale(1 ' + tailS.toFixed(3) + ')');
+    });
+
+    shift.setAttribute('transform', 'translate(0 ' + (DROP * eio(clamp((t - SLIDE0) / .8))).toFixed(2) + ')');
+    litc.setAttribute('opacity', eoc(clamp((t - SLIDE0) / 1.1)).toFixed(3));
+
+    var e = eio(clamp((t - SWEEP0) / SWEEP_D));
+    sweep.style.setProperty('--sx', (-45 + 160 * e).toFixed(2));
+    sweep.style.opacity = (t >= SWEEP0 && t <= SWEEP0 + SWEEP_D) ? 1 : 0;
+  }
+
+  var word = $('word'), fromEl = $('from');
+  var raf = 0, t0 = 0, wordOn = false, fromOn = false;
+
+  function loop(now) {
+    var t = (now - t0) / 1000;
+    if (t >= WORD && !wordOn) { wordOn = true; word.classList.add('on'); }
+    if (t >= FROM && !fromOn) { fromOn = true; fromEl.classList.add('on'); }
+    if (t >= END) { update(END + 5); raf = 0; setTimeout(finish, 1100); return; }
+    update(t);
+    raf = requestAnimationFrame(loop);
+  }
+
+  function start() {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    decoStart = performance.now(); if (D) D.done = false;
+    word.classList.remove('on'); fromEl.classList.remove('on');
+    wordOn = fromOn = false;
+    if (reduce) {
+      document.body.classList.add('instant');
+      word.classList.add('on'); fromEl.classList.add('on');
+      update(END + 5);
+      setTimeout(finish, 1500);
+      return;
+    }
+    update(0);
+    t0 = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+
+  var themeParam = /[?&]theme=(light|dark)/.exec(location.search);
+  if (themeParam) document.documentElement.setAttribute('data-theme', themeParam[1]);
+
+  var finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    try { window.parent.postMessage({ type: 'velentis-intro-done' }, '*'); } catch (e) {}
+  }
+  document.addEventListener('click', finish);
+  start();
+})();
+</script>
+</body>
+</html>
