@@ -1,5 +1,7 @@
 name: Build Android APK
 
+# This runs by itself every time you save a change to the main branch.
+# You can also start it by hand: Actions tab, then "Build Android APK", then "Run workflow".
 on:
   push:
     branches: [main, master]
@@ -34,6 +36,7 @@ jobs:
           mkdir -p www
           cp VELENTIS-index.html www/index.html
           cp VELENTIS-intro.html www/intro.html
+          cp VELENTIS-*.js VELENTIS-*.css www/
 
       - name: Draw the app icon and start screen
         run: node VELENTIS-make-assets.mjs
