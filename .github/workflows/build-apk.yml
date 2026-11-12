@@ -44,6 +44,12 @@ jobs:
       - name: Create the Android project
         run: npx cap add android
 
+      - name: Allow camera and location
+        run: |
+          f=android/app/src/main/AndroidManifest.xml
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n</manifest>#' "$f"
+          grep -c "uses-permission" "$f"
+
       - name: Make every icon and start screen size
         run: npx capacitor-assets generate --android
 
