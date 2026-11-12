@@ -107,10 +107,18 @@
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
     var v = $('rpVideo'); if (v) { try { v.srcObject = null; } catch (e) {} }
   }
+  // Ask Android for camera permission first (shows the real popup). Plain browsers skip this.
+  function askCamera() {
+    var cap = window.Capacitor, cam = cap && cap.Plugins && cap.Plugins.Camera;
+    if (!cam || !cam.requestPermissions) return Promise.resolve();
+    return cam.requestPermissions({ permissions: ['camera'] }).then(function (r) {
+      if (r && r.camera && r.camera !== 'granted') { var e = new Error('denied'); e.denied = true; throw e; }
+    }, function () {});
+  }
   function start() {
     S.status = 'Getting the camera ready...'; S.reps = 0; S.saved = false; S.v = 'live'; render();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { S.v = 'setup'; S.status = 'This device cannot open the camera here.'; render(); return; }
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: S.back ? 'environment' : 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }).then(function (s) {
+    askCamera().then(function () { return navigator.mediaDevices.getUserMedia({ video: { facingMode: S.back ? 'environment' : 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }); }).then(function (s) {
       stream = s;
       var v = $('rpVideo'); if (!v) { stopAll(); return; }
       v.srcObject = s; v.play().catch(function () {});
@@ -120,7 +128,11 @@
         loadPose().then(function (r) { landmarker = r; setStatus('Step back so your body is in view.'); loop(); },
           function () { mode = 'motion'; setStatus('Using basic counting. Keep the phone still and stay in view.'); loop(); });
       } else { setStatus('Keep the phone still and start moving.'); loop(); }
-    }).catch(function () { S.v = 'setup'; S.status = 'The camera did not open. Allow camera access for Velentis and try again.'; render(); });
+    }).catch(function (err) {
+      S.v = 'setup';
+      S.status = err && err.denied ? 'Camera is blocked. Open your phone Settings, Apps, Velentis, Permissions, Camera, then choose Allow.' : 'The camera did not open. Close other apps using it and try again.';
+      render();
+    });
   }
 
   var small = document.createElement('canvas'); small.width = 48; small.height = 36;

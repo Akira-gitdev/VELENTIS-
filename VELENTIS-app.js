@@ -41,7 +41,7 @@
     { k: 'count', n: 'Countdown board', d: 'Exams, birthdays, events', i: 'calendar' },
     { k: 'voice', n: 'Voice memos', d: 'Capture ideas by talking', i: 'mic' }
   ];
-  var HOME_TILES = ['ai', 'habits', 'plan', 'focus', 'notes', 'cards'];
+  var HOME_TILES = ['ai', 'story', 'habits', 'plan', 'focus', 'notes'];
   function toolByKey(k) { return TOOLS.filter(function (t) { return t.k === k; })[0]; }
 
   /* ---------- views ---------- */
@@ -149,21 +149,22 @@
           '<div class="div"></div><div><div class="eyebrow">Best streak</div><div class="big">' + u.plural(V.habits.bestStreak(), 'day') + '</div><p class="note" style="margin-top:12px">Keep it going</p></div>'
         : '<div><div class="eyebrow">Habits today</div><div class="big">No habits yet</div><p class="note" style="margin-top:8px">Add your first one to start a streak.</p></div>') + '</div>';
     }
+    var R = 34, C = 2 * Math.PI * R, off = C * (1 - Math.max(li.pct, st.total > 0 ? 3 : 0) / 100);
     $('v-home').innerHTML =
       '<header class="head"><div><div class="eyebrow">' + esc(date) + '</div><h1 class="greet">' + esc(greet) + '</h1></div>' +
       '<button class="icon-btn" data-act="go" data-to="look" aria-label="Change look">' + ic('palette') + '</button></header>' +
       '<label class="card search" for="q">' + ic('search') + '<input id="q" type="search" placeholder="Search tools, habits and notes" autocomplete="off"></label>' +
       '<div id="searchOut" class="stack" hidden></div>' +
       '<div id="homeBody" class="stack">' +
-      '<button class="card pad playercard" data-act="go" data-to="me"><div class="lvl"><span class="badge">' + li.level + '</span><span style="flex:1;min-width:0;text-align:left"><span class="eyebrow">Level ' + li.level + '</span><span class="big" style="display:block;font-size:20px;margin-top:2px">' + st.total + ' XP</span>' +
-      '<span class="bar"><i style="width:' + Math.max(li.pct, st.total > 0 ? 3 : 0) + '%"></i></span><span class="note" style="display:block;margin-top:6px">' + (li.need - li.into) + ' XP to level ' + (li.level + 1) + '</span></span></div>' + attrGrid() + '</button>' +
-      '<div class="card pad"><div class="sec" style="margin:0 0 4px"><h2>Today’s quests</h2><span class="eyebrow">' + w.active + ' of ' + w.goal + ' active days this week</span></div>' + questList() +
-      '<div class="next"><span class="eyebrow">Suggested next</span><div style="font-weight:600;margin-top:4px">' + esc(na.text) + '</div><div class="note">' + esc(na.why) + '</div>' +
-      (na.to ? '<button class="add" style="margin-top:10px;height:40px" data-act="open" data-k="' + na.to + '">Start</button>' : '') + '</div></div>' +
+      '<button class="card playercard" data-act="go" data-to="me"><div class="lvl"><span class="ringwrap"><svg viewBox="0 0 80 80" class="ring" aria-hidden="true"><circle cx="40" cy="40" r="' + R + '" class="rt"/><circle cx="40" cy="40" r="' + R + '" class="rf" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg><b>' + li.level + '</b></span>' +
+      '<span class="lvltxt"><span class="eyebrow">Level ' + li.level + '</span><span class="xp">' + st.total + ' XP</span><span class="note">' + (li.need - li.into) + ' XP to level ' + (li.level + 1) + '</span></span></div>' + attrGrid() + '</button>' +
+      '<section class="stack tight"><div class="sec"><h2>Today’s quests</h2><span class="eyebrow">' + w.active + ' of ' + w.goal + ' days this week</span></div><div class="card pad qlist">' + questList() + '</div></section>' +
+      '<div class="card next"><span class="eyebrow">Suggested next</span><div class="nt">' + esc(na.text) + '</div><div class="note">' + esc(na.why) + '</div>' +
+      (na.to ? '<button class="add" data-act="open" data-k="' + na.to + '">Start</button>' : '') + '</div>' +
       habitsCard +
-      '<div class="sec"><h2>Your tools</h2><span class="eyebrow">' + readyCount + ' of ' + TOOLS.length + ' ready</span></div>' +
+      '<section class="stack tight"><div class="sec"><h2>Your tools</h2><span class="eyebrow">' + readyCount + ' of ' + TOOLS.length + ' ready</span></div>' +
       '<div class="grid">' + HOME_TILES.map(function (k) { return tileHTML(toolByKey(k)); }).join('') + '</div>' +
-      '<button class="link" data-act="go" data-to="tools">See all ' + TOOLS.length + ' tools</button></div>';
+      '<button class="link" data-act="go" data-to="tools">See all ' + TOOLS.length + ' tools</button></section></div>';
   }
 
   /* ---------- all tools ---------- */
@@ -172,13 +173,26 @@
       '<span class="txt"><span class="nm">' + esc(t.n) + '</span><br><span class="sub">' + esc(t.d) + '</span></span>' +
       (t.built ? ic('chev') : '<span class="pill">Soon</span>') + '</button>';
   }
+  var GROUPS = [
+    ['Companion', ['ai', 'lang', 'story', 'write']],
+    ['Learn', ['quiz', 'facts', 'lib', 'cards', 'gent', 'skills']],
+    ['Body', ['move', 'reps', 'run']],
+    ['Daily life', ['habits', 'plan', 'focus', 'mood', 'notes', 'count', 'spend', 'chef']],
+    ['Together', ['online', 'friends', 'board']],
+    ['More', ['watch', 'voice']]
+  ];
   function renderTools() {
-    var ready = TOOLS.filter(function (t) { return t.built; }), soon = TOOLS.filter(function (t) { return !t.built; });
-    $('v-tools').innerHTML =
-      '<div class="topbar"><button class="icon-btn" data-act="go" data-to="home" aria-label="Back">' + ic('back') + '</button><h1>All tools</h1></div>' +
-      '<div class="eyebrow">Ready to use</div><div class="list">' + ready.map(rowTool).join('') + '</div>' +
-      (soon.length ? '<div class="eyebrow" style="margin-top:6px">Coming next</div><div class="list">' + soon.map(rowTool).join('') + '</div>' : '');
+    var html = '', seen = {};
+    GROUPS.forEach(function (g) {
+      var items = g[1].map(toolByKey).filter(Boolean);
+      items.forEach(function (t) { seen[t.k] = 1; });
+      if (items.length) html += '<section class="group"><div class="eyebrow">' + g[0] + '</div><div class="list">' + items.map(rowTool).join('') + '</div></section>';
+    });
+    var rest = TOOLS.filter(function (t) { return !seen[t.k]; });
+    if (rest.length) html += '<section class="group"><div class="eyebrow">More</div><div class="list">' + rest.map(rowTool).join('') + '</div></section>';
+    $('v-tools').innerHTML = '<div class="topbar"><button class="icon-btn" data-act="go" data-to="home" aria-label="Back">' + ic('back') + '</button><h1>All tools</h1></div>' + html;
   }
+
   function renderSoon() {
     var t = stub && toolByKey(stub);
     if (!t) { go('home'); return; }

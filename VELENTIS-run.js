@@ -98,21 +98,39 @@
     L.last = p;
   }
   function onErr(e) {
-    msg = e && e.code === 1 ? 'Location is off for Velentis. Allow it in your phone settings.' : 'Cannot get GPS right now.';
+    msg = e && e.code === 1 ? 'Location is blocked. Open your phone Settings, Apps, Velentis, Permissions, Location, then choose Allow.' : 'Cannot get GPS right now.';
     if (L && !L.fix) { cleanup(); view = 'idle'; L = null; }
     if (V.view() === 'run') render();
   }
   function cleanup() {
     clearInterval(tick); tick = 0;
-    if (watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    if (watchId != null) {
+      var g = geo();
+      try { if (g) g.clearWatch({ id: watchId }); else if (navigator.geolocation) navigator.geolocation.clearWatch(watchId); } catch (e) {}
+    }
     watchId = null;
     if (wake) { try { wake.release(); } catch (e) {} wake = null; }
   }
+  function geo() { var c = window.Capacitor; return c && c.Plugins && c.Plugins.Geolocation && c.Plugins.Geolocation.watchPosition ? c.Plugins.Geolocation : null; }
+  function wrapPos(p) { return { coords: p.coords, timestamp: p.timestamp }; }
+  function begin() {
+    var g = geo(), opts = { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 };
+    if (g) {
+      var dead = false;
+      g.watchPosition(opts, function (p, err) { if (dead) return; if (err || !p) onErr({ code: err && /denied|permission/i.test(err.message || '') ? 1 : 2 }); else onPos(wrapPos(p)); })
+        .then(function (id) { watchId = id; });
+    } else watchId = navigator.geolocation.watchPosition(onPos, onErr, opts);
+  }
   function start() {
-    if (!navigator.geolocation) { msg = 'This device has no GPS access here.'; render(); return; }
+    if (!geo() && !navigator.geolocation) { msg = 'This device has no GPS access here.'; render(); return; }
     msg = ''; L = { m: 0, acc: 0, seg: Date.now(), paused: false, last: null, pts: [], fix: false, day: iso(new Date()) };
     view = 'live'; render();
-    watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+    var g = geo();
+    if (g && g.requestPermissions) {
+      g.requestPermissions({ permissions: ['location'] }).then(function (r) {
+        if (r && r.location && r.location !== 'granted' && r.fine !== 'granted') onErr({ code: 1 }); else begin();
+      }, function () { begin(); });
+    } else begin();
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }, function () {}); } catch (e) {}
     tick = setInterval(function () {
       if (V.view() !== 'run' || view !== 'live' || !L) return;

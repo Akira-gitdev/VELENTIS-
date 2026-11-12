@@ -8,7 +8,9 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
-    "@capacitor/core": "^7.0.0"
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/camera": "^7.0.0",
+    "@capacitor/geolocation": "^7.0.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
