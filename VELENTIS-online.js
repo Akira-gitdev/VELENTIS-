@@ -27,7 +27,8 @@
     return 'Something went wrong' + (e && e.status ? ' (error ' + e.status + ')' : '') + '. Try again.';
   }
   function req(method, path, body, extra, retried) {
-    var h = { 'apikey': CFG.key, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (sess && sess.access_token ? sess.access_token : CFG.key) };
+    var h = { 'apikey': CFG.key, 'Content-Type': 'application/json' };
+    if (sess && sess.access_token) h['Authorization'] = 'Bearer ' + sess.access_token;   /* new-style publishable keys go in apikey only */
     if (extra) for (var k in extra) h[k] = extra[k];
     return fetch(CFG.url.replace(/\/$/, '') + path, { method: method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }).then(function (r) {
       if (r.status === 401 && sess && sess.refresh_token && !retried && path.indexOf('/auth/') !== 0) {
