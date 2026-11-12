@@ -130,7 +130,7 @@
       } else { setStatus('Keep the phone still and start moving.'); loop(); }
     }).catch(function (err) {
       S.v = 'setup';
-      S.status = err && err.denied ? 'Camera is blocked. Open your phone Settings, Apps, Velentis, Permissions, Camera, then choose Allow.' : 'The camera did not open. Close other apps using it and try again.';
+      S.status = err && err.denied ? 'Camera is blocked. Open your phone Settings, Apps, Velentis, Permissions, Camera, then choose Allow.' : 'The camera did not open (' + ((err && err.name) || 'unknown') + '). Close other apps using the camera and try again.';
       render();
     });
   }

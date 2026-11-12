@@ -102,9 +102,12 @@
     'skills.lesson': { attr: 'practical', xp: 10, cap: 20, label: 'Finished a Life Skills lesson' },
     'workout.log': { attr: 'strength', xp: 10, cap: 20, label: 'Logged a workout' },
     'reps.done': { attr: 'strength', xp: 1, cap: 30, label: 'Counted 5 reps' },
-    'run.done': { attr: 'endurance', xp: 4, cap: 48, label: 'Covered half a kilometer' }
+    'run.done': { attr: 'endurance', xp: 4, cap: 48, label: 'Covered half a kilometer' },
+    'write.turn': { attr: 'communication', xp: 3, cap: 15, label: 'Wrote with the helper' },
+    'watch.done': { attr: 'knowledge', xp: 3, cap: 9, label: 'Finished something on your watchlist' },
+    'voice.memo': { attr: 'discipline', xp: 3, cap: 9, label: 'Recorded a voice memo' }
   };
-  var TOOL_FOR = { 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
+  var TOOL_FOR = { 'write.turn': 'write', 'watch.done': 'watch', 'voice.memo': 'voice', 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
 
   function seenToday(d) { if (C.seen.d !== d) C.seen = { d: d, keys: {} }; return C.seen.keys; }
   function dayXp(type, d) { return C.ledger.reduce(function (a, e) { return e.d === d && e.s === type ? a + e.xp : a; }, 0); }

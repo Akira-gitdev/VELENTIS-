@@ -46,6 +46,7 @@
       '<div class="card pad"><div class="head" style="align-items:center"><button class="icon-btn" data-act="sp-prev" aria-label="Previous month">' + ic('back') + '</button>' +
       '<div style="text-align:center"><div class="eyebrow">' + monthLabel(spMonth) + '</div><div class="big" style="font-size:30px">' + money(total) + '</div><div class="note">' + cmp + '</div></div>' +
       '<button class="icon-btn" data-act="sp-next" aria-label="Next month"' + (spMonth >= nowM ? ' disabled style="opacity:.35"' : '') + '>' + ic('chev') + '</button></div>' + budgetHTML + '</div>' +
+      '<form class="stack" id="spNL" novalidate style="gap:6px"><div class="form"><input class="field" id="spNLIn" maxlength="200" placeholder="Type it: pizza 250 yesterday" aria-label="Type an expense in plain words" autocomplete="off"><button class="add" type="submit">Add</button></div><div class="note" id="spNLMsg" hidden></div></form>' +
       '<form class="stack" id="spForm" novalidate style="gap:8px"><div class="form"><input class="field" id="spAmt" inputmode="decimal" placeholder="Amount" aria-label="Amount" autocomplete="off" style="max-width:130px"><select class="field" id="spCat" aria-label="Category">' + opts + '</select></div>' +
       '<div class="form"><input class="field" id="spNote" maxlength="40" placeholder="What was it? (optional)" aria-label="Note" autocomplete="off"><input class="field" id="spDate" type="date" value="' + today + '" max="' + today + '" aria-label="Date" style="max-width:150px"></div>' +
       '<button class="add" type="submit" style="width:100%">Add expense</button><div class="err" id="spErr" hidden>Type an amount above zero.</div></form>' +
@@ -213,6 +214,10 @@
       '<form class="stack" id="cdForm" novalidate style="gap:8px"><div class="form"><input class="field" id="cdName" maxlength="40" placeholder="What are you waiting for?" aria-label="Event name" autocomplete="off"><input class="field" id="cdDate" type="date" value="' + iso(addDays(new Date(), 7)) + '" aria-label="Date" style="max-width:150px"></div><button class="add" type="submit" style="width:100%">Add</button><div class="err" id="cdErr" hidden>Type a name and pick a date.</div></form>';
   }
 
+  V.spend = { add: function (amt, cat, note, date, quiet) {
+    var rid = u.uid(); SP.items.push({ id: rid, amt: amt, cat: cat, note: note || '', date: date || iso(new Date()) });
+    spMonth = (date || iso(new Date())).slice(0, 7); spSave(); V.emit('spend.add', { ref: rid });
+  } };
   V.registerTool('spend', renderSpend);
   V.registerTool('chef', renderChef);
   V.registerTool('notes', renderNotes);
@@ -300,4 +305,139 @@
       nt.q = e.target.value; var pos = e.target.selectionStart; renderNotes(); var s = $('ntSearch'); if (s) { s.focus(); try { s.setSelectionRange(pos, pos); } catch (x) {} }
     }
   });
+})();
+
+/* Watchlist and Voice memos. */
+(function () {
+  'use strict';
+  var V = window.Velentis, u = V.u, $ = u.$, esc = u.esc, ic = u.ic, iso = u.iso, plural = u.plural, bar = u.bar;
+
+  /* ---------- Watchlist ---------- */
+  var WK = 'velentis.watch.v1', W = u.get(WK, { items: [] });
+  if (!W || !Array.isArray(W.items)) W = { items: [] };
+  var KINDS = ['Anime', 'Show', 'Movie', 'Song', 'Book'], wf = 'All', wk = 'Anime', wpend = null;
+  var STATES = [['plan', 'Planned'], ['now', 'In progress'], ['done', 'Finished']];
+  function wSave() { u.put(WK, W); }
+  function renderWatch() {
+    var list = W.items.filter(function (i) { return wf === 'All' || i.kind === wf; });
+    var rows = list.map(function (i) {
+      var st = STATES.filter(function (x) { return x[0] === i.st; })[0] || STATES[0], pend = wpend === i.id;
+      return '<li class="card row"><button class="check' + (i.st === 'done' ? ' on' : '') + '" data-act="wt-cycle" data-id="' + i.id + '" aria-label="Change status, now ' + st[1] + '">' + (i.st === 'done' ? ic('tick') : '') + '</button>' +
+        '<div class="txt"><div class="nm">' + esc(i.title) + '</div><div class="sub">' + esc(i.kind) + ' · ' + st[1] + '</div></div>' +
+        '<button class="icon-btn' + (pend ? ' warn' : '') + '" data-act="wt-del" data-id="' + i.id + '" aria-label="Delete ' + esc(i.title) + '">' + (pend ? 'Delete?' : ic('trash')) + '</button></li>';
+    }).join('');
+    $('v-watch').innerHTML = bar(u.BACK_TOOLS, 'Watchlist') +
+      '<div class="chips">' + ['All'].concat(KINDS).map(function (k) { return '<button class="tag' + (wf === k ? ' on' : '') + '" data-act="wt-filter" data-id="' + k + '" aria-pressed="' + (wf === k) + '">' + k + '</button>'; }).join('') + '</div>' +
+      (rows ? '<ul class="list">' + rows + '</ul>' : '<div class="card empty"><h2>Nothing here yet</h2><p>Add the anime, songs, shows and books you want to get to.</p></div>') +
+      '<form class="stack" id="wtForm" novalidate style="gap:8px"><div class="chips">' + KINDS.map(function (k) { return '<button type="button" class="tag' + (wk === k ? ' on' : '') + '" data-act="wt-kind" data-id="' + k + '" aria-pressed="' + (wk === k) + '">' + k + '</button>'; }).join('') + '</div>' +
+      '<div class="form"><input class="field" id="wtTitle" maxlength="60" placeholder="Title" aria-label="Title" autocomplete="off"><button class="add" type="submit">Add</button></div><div class="err" id="wtErr" hidden>Type a title first.</div></form>' +
+      '<p class="note">Tap the circle to move something from planned to in progress to finished. Finishing earns XP.</p>';
+  }
+  V.registerTool('watch', renderWatch);
+  V.registerSearch(function (q) {
+    return W.items.filter(function (i) { return i.title.toLowerCase().indexOf(q) !== -1; }).map(function (i) { return { icon: 'play', title: i.title, sub: i.kind, to: 'watch' }; });
+  });
+
+  /* ---------- Voice memos (audio kept in IndexedDB on this phone) ---------- */
+  var VK = 'velentis.voice.v1', VM = u.get(VK, { items: [] });
+  if (!VM || !Array.isArray(VM.items)) VM = { items: [] };
+  var vs = { rec: null, chunks: [], stream: null, t0: 0, timer: 0, msg: '', play: null, url: '', pend: null };
+  function vSave() { u.put(VK, VM); }
+  function db() {
+    return new Promise(function (ok, no) {
+      var r = indexedDB.open('velentis-voice', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('a'); };
+      r.onsuccess = function () { ok(r.result); }; r.onerror = function () { no(r.error); };
+    });
+  }
+  function dbPut(id, blob) { return db().then(function (d) { return new Promise(function (ok, no) { var t = d.transaction('a', 'readwrite'); t.objectStore('a').put(blob, id); t.oncomplete = ok; t.onerror = no; }); }); }
+  function dbGet(id) { return db().then(function (d) { return new Promise(function (ok, no) { var r = d.transaction('a').objectStore('a').get(id); r.onsuccess = function () { ok(r.result); }; r.onerror = no; }); }); }
+  function dbDel(id) { return db().then(function (d) { d.transaction('a', 'readwrite').objectStore('a').delete(id); }); }
+  function clock(s) { s = Math.round(s); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+
+  function renderVoice() {
+    var recording = !!vs.rec;
+    var rows = VM.items.slice().reverse().map(function (m) {
+      var on = vs.play === m.id, pend = vs.pend === m.id;
+      return '<li class="card row"><button class="check' + (on ? ' on' : '') + '" data-act="vm-play" data-id="' + m.id + '" aria-label="' + (on ? 'Stop' : 'Play') + ' memo">' + (on ? ic('tick') : ic('play')) + '</button>' +
+        '<div class="txt"><div class="nm">' + esc(m.name) + '</div><div class="sub">' + esc(m.day) + ' · ' + clock(m.sec) + '</div></div>' +
+        '<button class="icon-btn' + (pend ? ' warn' : '') + '" data-act="vm-del" data-id="' + m.id + '" aria-label="Delete memo">' + (pend ? 'Delete?' : ic('trash')) + '</button></li>';
+    }).join('');
+    $('v-voice').innerHTML = bar(u.BACK_TOOLS, 'Voice memos') +
+      '<div class="card hero"><span class="chip">' + ic('mic') + '</span><h2 id="vmClock">' + (recording ? '0:00' : 'Ready') + '</h2><p>' + esc(vs.msg || (recording ? 'Recording. Tap stop when you are done.' : 'Tap the button and talk. Memos stay on this phone.')) + '</p></div>' +
+      '<button class="btn2 main" data-act="vm-' + (recording ? 'stop' : 'start') + '">' + (recording ? 'Stop and save' : 'Start recording') + '</button>' +
+      (rows ? '<ul class="list">' + rows + '</ul>' : '');
+  }
+  function stopStream() { if (vs.stream) { vs.stream.getTracks().forEach(function (t) { t.stop(); }); vs.stream = null; } clearInterval(vs.timer); vs.timer = 0; }
+  function stopPlay() { var a = $('vmAudio'); if (a) { a.pause(); a.remove(); } if (vs.url) { URL.revokeObjectURL(vs.url); vs.url = ''; } vs.play = null; }
+  function vStart() {
+    if (!navigator.mediaDevices || !window.MediaRecorder) { vs.msg = 'This device cannot record audio here.'; renderVoice(); return; }
+    stopPlay();
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      vs.stream = s; vs.chunks = []; vs.msg = '';
+      var r = new MediaRecorder(s); vs.rec = r; vs.t0 = Date.now();
+      r.ondataavailable = function (e) { if (e.data && e.data.size) vs.chunks.push(e.data); };
+      r.onstop = function () {
+        var sec = (Date.now() - vs.t0) / 1000, blob = new Blob(vs.chunks, { type: r.mimeType || 'audio/webm' });
+        stopStream(); vs.rec = null;
+        if (sec < 1) { vs.msg = 'Too short, nothing saved.'; if (V.view() === 'voice') renderVoice(); return; }
+        var id = 'v' + u.uid(), n = VM.items.length + 1;
+        dbPut(id, blob).then(function () {
+          VM.items.push({ id: id, name: 'Memo ' + n, day: iso(new Date()), sec: Math.round(sec) }); vSave(); vs.msg = 'Saved.';
+          V.emit('voice.memo', { ref: id });
+          if (V.view() === 'voice') renderVoice();
+        }, function () { vs.msg = 'Could not save the memo.'; if (V.view() === 'voice') renderVoice(); });
+      };
+      r.start(); renderVoice();
+      vs.timer = setInterval(function () { var c = $('vmClock'); if (c && V.view() === 'voice') c.textContent = clock((Date.now() - vs.t0) / 1000); }, 500);
+    }).catch(function (err) {
+      vs.msg = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError') ? 'Microphone is blocked. Open your phone Settings, Apps, Velentis, Permissions, Microphone, then choose Allow.' : 'The microphone did not open (' + ((err && err.name) || 'unknown') + ').';
+      renderVoice();
+    });
+  }
+  V.registerTool('voice', renderVoice);
+  V.on('view.leave', function (k) { if (k === 'voice') { if (vs.rec) { try { vs.rec.onstop = null; vs.rec.stop(); } catch (e) {} vs.rec = null; } stopStream(); stopPlay(); } });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t) return;
+    var a = t.getAttribute('data-act'), id = t.getAttribute('data-id');
+    if (a.indexOf('wt-') === 0) {
+      if (a === 'wt-filter') wf = id;
+      else if (a === 'wt-kind') { wk = id; var tv = $('wtTitle') ? $('wtTitle').value : ''; renderWatch(); if ($('wtTitle')) $('wtTitle').value = tv; return; }
+      else if (a === 'wt-cycle') {
+        var i = W.items.filter(function (x) { return x.id === id; })[0]; if (!i) return;
+        i.st = i.st === 'plan' ? 'now' : i.st === 'now' ? 'done' : 'plan'; wSave();
+        if (i.st === 'done') V.emit('watch.done', { ref: id });
+      } else if (a === 'wt-del') {
+        if (wpend === id) { W.items = W.items.filter(function (x) { return x.id !== id; }); wpend = null; wSave(); }
+        else { wpend = id; setTimeout(function () { if (wpend === id) { wpend = null; if (V.view() === 'watch') renderWatch(); } }, 3000); }
+      }
+      renderWatch();
+    } else if (a.indexOf('vm-') === 0) {
+      if (a === 'vm-start') vStart();
+      else if (a === 'vm-stop') { if (vs.rec) vs.rec.stop(); }
+      else if (a === 'vm-play') {
+        if (vs.play === id) { stopPlay(); renderVoice(); return; }
+        stopPlay();
+        dbGet(id).then(function (b) {
+          if (!b) { vs.msg = 'That memo is missing.'; renderVoice(); return; }
+          vs.url = URL.createObjectURL(b); vs.play = id;
+          var au = document.createElement('audio'); au.id = 'vmAudio'; au.src = vs.url; document.body.appendChild(au);
+          au.onended = function () { stopPlay(); if (V.view() === 'voice') renderVoice(); };
+          au.play().catch(function () {}); renderVoice();
+        });
+      } else if (a === 'vm-del') {
+        if (vs.pend === id) { if (vs.play === id) stopPlay(); VM.items = VM.items.filter(function (x) { return x.id !== id; }); dbDel(id); vs.pend = null; vSave(); renderVoice(); }
+        else { vs.pend = id; renderVoice(); setTimeout(function () { if (vs.pend === id) { vs.pend = null; if (V.view() === 'voice') renderVoice(); } }, 3000); }
+      }
+    }
+  });
+  document.addEventListener('submit', function (e) {
+    if (e.target.id !== 'wtForm') return;
+    e.preventDefault();
+    var f = $('wtTitle'), v = f.value.trim();
+    if (!v) { $('wtErr').hidden = false; f.focus(); return; }
+    W.items.push({ id: 'w' + u.uid(), title: v, kind: wk, st: 'plan' }); wSave(); renderWatch(); $('wtTitle').focus();
+  });
+  document.addEventListener('input', function (e) { if (e.target.id === 'wtTitle') $('wtErr').hidden = true; });
 })();
