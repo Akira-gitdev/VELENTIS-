@@ -256,3 +256,52 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 .mood.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .mood.on span { color: var(--on-accent); }
 button:disabled { cursor: default; }
+
+.msgs { display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
+.msg { max-width: 86%; padding: 11px 14px; border-radius: 18px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.msg.ai { align-self: flex-start; background: var(--card); border: 1px solid var(--card-line); box-shadow: var(--shadow); }
+.msg.you { align-self: flex-end; background: var(--accent); color: var(--on-accent); }
+.msg.err { align-self: stretch; max-width: 100%; border: 1px solid var(--card-line); color: var(--muted); font-size: 14px; }
+.msg.typing { display: flex; gap: 5px; padding: 14px 16px; }
+.msg.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite ease-in-out; }
+.msg.typing i:nth-child(2) { animation-delay: .15s; } .msg.typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choices .btn2 { text-align: left; }
+.chatbox { position: sticky; bottom: calc(92px + env(safe-area-inset-bottom)); }
+details summary { list-style: none; } details summary::-webkit-details-marker { display: none; }
+.qtext { font-size: 19px; line-height: 1.4; font-weight: 600; text-wrap: balance; }
+.prose { margin: 0; font-size: 16px; line-height: 1.6; }
+.opt { text-align: left; }
+.opt.right { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.opt.wrong { opacity: .55; text-decoration: line-through; }
+.opt:disabled { opacity: 1; }
+.opt.wrong:disabled { opacity: .55; }
+.okc { border-color: var(--accent); }
+.msg.story { max-width: 100%; align-self: stretch; display: flex; flex-direction: column; gap: 10px; }
+.pic { aspect-ratio: 8 / 5; border-radius: 14px; overflow: hidden; background: linear-gradient(110deg, var(--field) 30%, var(--card-line) 50%, var(--field) 70%); background-size: 200% 100%; animation: shim 1.4s linear infinite; }
+.pic.fail, .tpic.fail { animation: none; }
+.pic.fail { display: none; }
+img.gen { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s ease; display: block; }
+img.gen.ok { opacity: 1; }
+.pic:has(img.ok), .tpic:has(img.ok) { animation: none; }
+@keyframes shim { to { background-position: -200% 0; } }
+.tarot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tcard { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid var(--card-line); background: var(--card); box-shadow: var(--shadow); color: var(--fg); font: inherit; cursor: pointer; padding: 0; text-align: center; }
+.tcard:active { transform: scale(.98); }
+.tpic { aspect-ratio: 2 / 3; display: grid; place-items: center; background: linear-gradient(110deg, var(--field) 30%, var(--card-line) 50%, var(--field) 70%); background-size: 200% 100%; animation: shim 1.4s linear infinite; color: var(--muted); }
+.tpic .i { width: 26px; height: 26px; }
+.tl { padding: 8px 6px 10px; font-size: 12.5px; font-weight: 600; line-height: 1.25; }
+.cam { position: relative; border-radius: 18px; overflow: hidden; background: #000; aspect-ratio: 3 / 4; max-height: 60vh; margin: 0 auto; width: 100%; }
+.cam video, .cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mirror { transform: scaleX(-1); }
+.rpcount { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); min-width: 84px; padding: 6px 18px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font: 600 44px/1.1 var(--font); text-align: center; backdrop-filter: blur(6px); }
+canvas.route { width: 100%; height: 200px; border-radius: 16px; background: var(--field); border: 1px solid var(--card-line); display: block; }
+.rank { flex: none; width: 28px; text-align: center; font-weight: 700; color: var(--muted); }
+.card.row.me { border-color: var(--accent); }
+.cmp { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; padding: 7px 0; border-top: 1px solid var(--card-line); font-size: 14px; align-items: center; }
+.cmp:first-child { border-top: 0; }
+.cmp b { text-align: center; font-variant-numeric: tabular-nums; }
+.cmp b.lead { color: var(--accent); }
+.cmp span { color: var(--muted); }
+input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }

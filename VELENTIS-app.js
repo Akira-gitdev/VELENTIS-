@@ -14,6 +14,7 @@
 
   /* the full list of planned tools; a tool becomes "ready" when its file registers it */
   var TOOLS = V.TOOLS = [
+    { k: 'ai', n: 'Vel, your companion', d: 'Talk, ask, think out loud', i: 'spark' },
     { k: 'chef', n: 'Fridge chef', d: 'Recipes from what you have', i: 'chef' },
     { k: 'lang', n: 'Language buddy', d: 'Practice a little every day', i: 'lang' },
     { k: 'story', n: 'Text adventure', d: 'A story that reacts to you', i: 'compass' },
@@ -26,13 +27,21 @@
     { k: 'mood', n: 'Mood journal', d: 'A few lines a day', i: 'smile' },
     { k: 'quiz', n: 'Quiz game', d: 'Test what you know', i: 'help' },
     { k: 'move', n: 'Workout log', d: 'Log sets and streaks', i: 'activity' },
+    { k: 'reps', n: 'Rep counter', d: 'Your camera counts the reps', i: 'camera' },
+    { k: 'run', n: 'Run tracker', d: 'GPS distance, time and pace', i: 'route' },
+    { k: 'online', n: 'Account and sync', d: 'Log in, back up, use two phones', i: 'cloud' },
+    { k: 'friends', n: 'Friends', d: 'Add friends and compare', i: 'users' },
+    { k: 'board', n: 'Leaderboards', d: 'Weekly XP, distance, explorers', i: 'trophy' },
     { k: 'watch', n: 'Watchlist', d: 'Anime, songs, and books', i: 'play' },
     { k: 'write', n: 'Story and poem helper', d: 'Get unstuck and write', i: 'pen' },
     { k: 'facts', n: 'Myths and facts', d: 'Explore how things work', i: 'globe' },
+    { k: 'lib', n: 'Knowledge library', d: 'Short explainers on big ideas', i: 'book' },
+    { k: 'gent', n: 'Gentleman academy', d: 'Manners, calm and presence', i: 'award' },
+    { k: 'skills', n: 'Life skills academy', d: 'Money, sleep, work, safety', i: 'bulb' },
     { k: 'count', n: 'Countdown board', d: 'Exams, birthdays, events', i: 'calendar' },
     { k: 'voice', n: 'Voice memos', d: 'Capture ideas by talking', i: 'mic' }
   ];
-  var HOME_TILES = ['habits', 'plan', 'focus', 'notes', 'cards', 'spend'];
+  var HOME_TILES = ['ai', 'habits', 'plan', 'focus', 'notes', 'cards'];
   function toolByKey(k) { return TOOLS.filter(function (t) { return t.k === k; })[0]; }
 
   /* ---------- views ---------- */
@@ -204,6 +213,8 @@
       '<div class="week">' + ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(function (l, i) { return '<div class="day"><div class="l">' + l + '</div><div class="c ' + (w.days[i] ? 'full' : '') + '">' + (w.days[i] ? ic('tick') : '') + '</div></div>'; }).join('') + '</div></div>' +
       '<div class="card pad"><div class="sec" style="margin:0 0 10px"><h2>Badges</h2><span class="eyebrow">' + got + ' of ' + ach.length + '</span></div><div class="ach">' + badges + '</div></div>' +
       '<div class="card pad"><div class="eyebrow" style="margin-bottom:6px">Recent XP</div>' + (recent ? '<ul class="list" style="gap:0">' + recent + '</ul>' : '<p class="note">Nothing yet. Check off a habit or finish a quest.</p>') + '</div>' +
+      '<button class="card row btn" data-act="go" data-to="online"><span class="chip">' + ic('cloud') + '</span><span class="txt"><span class="nm">Account and sync</span><br><span class="sub">Log in and back up online</span></span>' + ic('chev') + '</button>' +
+      '<button class="card row btn" data-act="go" data-to="aikey"><span class="chip">' + ic('spark') + '</span><span class="txt"><span class="nm">Vel settings</span><br><span class="sub">Add your free AI key</span></span>' + ic('chev') + '</button>' +
       '<button class="card row btn" data-act="go" data-to="stats"><span class="chip">' + ic('bars') + '</span><span class="txt"><span class="nm">Habit stats</span><br><span class="sub">Your last 7 days</span></span>' + ic('chev') + '</button>' +
       '<div class="card pad stack" style="gap:10px"><div class="eyebrow">Your data</div><p class="note">Everything lives on this phone only. Copy a backup now and then, so you can restore it after reinstalling.</p>' +
       '<button class="btn2" data-act="exportData">' + (showExport ? 'Refresh backup text' : 'Make a backup') + '</button>' +

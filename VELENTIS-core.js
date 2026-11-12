@@ -48,12 +48,12 @@
   /* ---------- player state ---------- */
   var KEY = 'velentis.core.v1';
   var ATTRS = [
-    ['strength', 'Strength', 'Grows with workouts (coming soon)'],
-    ['endurance', 'Endurance', 'Grows with running (coming soon)'],
+    ['strength', 'Strength', 'Grows with workouts and rep counting'],
+    ['endurance', 'Endurance', 'Grows with walking and running'],
     ['knowledge', 'Knowledge', 'Flashcards, notes and learning'],
     ['discipline', 'Discipline', 'Habits, plans, focus and check-ins'],
     ['practical', 'Practical Skills', 'Cooking and money skills'],
-    ['communication', 'Communication', 'Grows with language lessons (coming soon)']
+    ['communication', 'Communication', 'Grows with language practice and chatting']
   ];
 
   function fresh() {
@@ -91,9 +91,20 @@
     'note.add': { attr: 'knowledge', xp: 4, cap: 12, label: 'Wrote a note' },
     'plan.done': { attr: 'discipline', xp: 6, cap: 48, label: 'Finished a planned task' },
     'focus.done': { attr: 'discipline', xp: 2, cap: 40, label: 'Focused for 5 minutes' },
-    'mood.log': { attr: 'discipline', xp: 5, cap: 5, label: 'Checked in with your mood' }
+    'mood.log': { attr: 'discipline', xp: 5, cap: 5, label: 'Checked in with your mood' },
+    'ai.chat': { attr: 'communication', xp: 2, cap: 10, label: 'Chatted with Vel' },
+    'lang.turn': { attr: 'communication', xp: 3, cap: 30, label: 'Practiced a language' },
+    'story.turn': { attr: 'knowledge', xp: 2, cap: 20, label: 'Played the story' },
+    'quiz.done': { attr: 'knowledge', xp: 3, cap: 45, label: 'Got a quiz answer right' },
+    'facts.guess': { attr: 'knowledge', xp: 1, cap: 10, label: 'Played myth or fact' },
+    'lib.read': { attr: 'knowledge', xp: 3, cap: 15, label: 'Read a library article' },
+    'gent.lesson': { attr: 'communication', xp: 10, cap: 20, label: 'Finished a Gentleman lesson' },
+    'skills.lesson': { attr: 'practical', xp: 10, cap: 20, label: 'Finished a Life Skills lesson' },
+    'workout.log': { attr: 'strength', xp: 10, cap: 20, label: 'Logged a workout' },
+    'reps.done': { attr: 'strength', xp: 1, cap: 30, label: 'Counted 5 reps' },
+    'run.done': { attr: 'endurance', xp: 4, cap: 48, label: 'Covered half a kilometer' }
   };
-  var TOOL_FOR = { 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood' };
+  var TOOL_FOR = { 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
 
   function seenToday(d) { if (C.seen.d !== d) C.seen = { d: d, keys: {} }; return C.seen.keys; }
   function dayXp(type, d) { return C.ledger.reduce(function (a, e) { return e.d === d && e.s === type ? a + e.xp : a; }, 0); }
@@ -151,6 +162,16 @@
     { id: 'plan2', text: 'Finish 2 planned tasks', type: 'plan.done', need: 2, bonus: 12, attr: 'discipline' },
     { id: 'focus1', text: 'Focus for 10 minutes', type: 'focus.done', need: 2, bonus: 12, attr: 'discipline' },
     { id: 'mood1', text: 'Check in with your mood', type: 'mood.log', need: 1, bonus: 8, attr: 'discipline' },
+    { id: 'chat1', text: 'Talk with Vel', type: 'ai.chat', need: 2, bonus: 6, attr: 'communication' },
+    { id: 'lang3', text: 'Practice a language 3 times', type: 'lang.turn', need: 3, bonus: 12, attr: 'communication' },
+    { id: 'quiz5', text: 'Get 5 quiz answers right', type: 'quiz.done', need: 5, bonus: 12, attr: 'knowledge' },
+    { id: 'facts3', text: 'Play 3 rounds of myth or fact', type: 'facts.guess', need: 3, bonus: 8, attr: 'knowledge' },
+    { id: 'lib1', text: 'Read a library article', type: 'lib.read', need: 1, bonus: 8, attr: 'knowledge' },
+    { id: 'gent1', text: 'Finish a Gentleman lesson', type: 'gent.lesson', need: 1, bonus: 14, attr: 'communication' },
+    { id: 'skills1', text: 'Finish a Life Skills lesson', type: 'skills.lesson', need: 1, bonus: 14, attr: 'practical' },
+    { id: 'move1', text: 'Log a workout', type: 'workout.log', need: 1, bonus: 12, attr: 'strength' },
+    { id: 'reps20', text: 'Count 20 reps', type: 'reps.done', need: 4, bonus: 12, attr: 'strength' },
+    { id: 'run1', text: 'Walk or run 1 km', type: 'run.done', need: 2, bonus: 14, attr: 'endurance' },
     { id: 'cook1', text: 'Cook something', type: 'chef.cook', need: 1, bonus: 12, attr: 'practical' }
   ];
   function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -204,6 +225,15 @@
     ['cards100', 'Card sharp', 'Study 100 flashcards', function () { return (C.tot['cards.study'] || 0) >= 100; }],
     ['cook5', 'Home cook', 'Cook 5 recipes', function () { return (C.tot['chef.cook'] || 0) >= 5; }],
     ['plan25', 'Plan keeper', 'Finish 25 planned tasks', function () { return (C.tot['plan.done'] || 0) >= 25; }],
+    ['lang10', 'Word by word', 'Practice a language 10 times', function () { return (C.tot['lang.turn'] || 0) >= 10; }],
+    ['story10', 'Storyteller', 'Play 10 story turns', function () { return (C.tot['story.turn'] || 0) >= 10; }],
+    ['quiz50', 'Quiz whiz', 'Get 50 quiz answers right', function () { return (C.tot['quiz.done'] || 0) >= 50; }],
+    ['facts20', 'Myth buster', 'Play 20 rounds of myth or fact', function () { return (C.tot['facts.guess'] || 0) >= 20; }],
+    ['lib10', 'Bookworm', 'Read 10 library articles', function () { return (C.tot['lib.read'] || 0) >= 10; }],
+    ['academy8', 'Lifelong learner', 'Finish 8 academy lessons', function () { return (C.tot['gent.lesson'] || 0) + (C.tot['skills.lesson'] || 0) >= 8; }],
+    ['workout10', 'Regular', 'Log 10 workouts', function () { return (C.tot['workout.log'] || 0) >= 10; }],
+    ['reps500', 'Rep machine', 'Count 500 reps with the camera', function () { return (C.tot['reps.done'] || 0) >= 100; }],
+    ['run10', 'Ten kilometers', 'Cover 10 km in total', function () { return (C.tot['run.done'] || 0) >= 20; }],
     ['mood7', 'Self aware', 'Check in with your mood 7 times', function () { return (C.tot['mood.log'] || 0) >= 7; }]
   ];
   function checkAch() {
@@ -234,7 +264,7 @@
   /* ---------- backup: everything the app saved on this phone ---------- */
   function allKeys() {
     var out = [];
-    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf('velentis.') === 0 && k !== 'velentis.logo.theme') out.push(k); } } catch (e) {}
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf('velentis.') === 0 && k !== 'velentis.logo.theme' && k !== 'velentis.ai.v1' && k !== 'velentis.session' && k !== 'velentis.sync.v1') out.push(k); } } catch (e) {}
     return out;
   }
   function exportAll() {
@@ -250,7 +280,7 @@
     });
     return n ? '' : 'The backup was empty.';
   }
-  function eraseAll() { allKeys().forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} }); }
+  function eraseAll() { allKeys().concat(['velentis.session', 'velentis.sync.v1']).forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} }); }
 
   V.core = {
     ATTRS: ATTRS, RULES: RULES,
