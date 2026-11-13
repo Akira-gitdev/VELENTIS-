@@ -103,11 +103,13 @@
     'workout.log': { attr: 'strength', xp: 10, cap: 20, label: 'Logged a workout' },
     'reps.done': { attr: 'strength', xp: 1, cap: 30, label: 'Counted 5 reps' },
     'run.done': { attr: 'endurance', xp: 4, cap: 48, label: 'Covered half a kilometer' },
+    'dungeon.clear': { attr: 'endurance', xp: 8, cap: 96, label: 'Cleared a dungeon' },
+    'wardrobe.wear': { attr: 'practical', xp: 3, cap: 3, label: 'Picked today\u2019s outfit' },
     'write.turn': { attr: 'communication', xp: 3, cap: 15, label: 'Wrote with the helper' },
     'watch.done': { attr: 'knowledge', xp: 3, cap: 9, label: 'Finished something on your watchlist' },
     'voice.memo': { attr: 'discipline', xp: 3, cap: 9, label: 'Recorded a voice memo' }
   };
-  var TOOL_FOR = { 'write.turn': 'write', 'watch.done': 'watch', 'voice.memo': 'voice', 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
+  var TOOL_FOR = { 'dungeon.clear': 'dungeon', 'wardrobe.wear': 'wardrobe', 'write.turn': 'write', 'watch.done': 'watch', 'voice.memo': 'voice', 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
 
   function seenToday(d) { if (C.seen.d !== d) C.seen = { d: d, keys: {} }; return C.seen.keys; }
   function dayXp(type, d) { return C.ledger.reduce(function (a, e) { return e.d === d && e.s === type ? a + e.xp : a; }, 0); }
@@ -236,6 +238,9 @@
     ['academy8', 'Lifelong learner', 'Finish 8 academy lessons', function () { return (C.tot['gent.lesson'] || 0) + (C.tot['skills.lesson'] || 0) >= 8; }],
     ['workout10', 'Regular', 'Log 10 workouts', function () { return (C.tot['workout.log'] || 0) >= 10; }],
     ['reps500', 'Rep machine', 'Count 500 reps with the camera', function () { return (C.tot['reps.done'] || 0) >= 100; }],
+    ['dun1', 'Gate opener', 'Clear a dungeon', function () { return (C.tot['dungeon.clear'] || 0) >= 1; }],
+    ['dun10', 'Dungeon veteran', 'Clear dungeons worth 10 ranks in total', function () { return (C.tot['dungeon.clear'] || 0) >= 10; }],
+    ['wear7', 'Well dressed', 'Pick your outfit on 7 days', function () { return (C.tot['wardrobe.wear'] || 0) >= 7; }],
     ['run10', 'Ten kilometers', 'Cover 10 km in total', function () { return (C.tot['run.done'] || 0) >= 20; }],
     ['mood7', 'Self aware', 'Check in with your mood 7 times', function () { return (C.tot['mood.log'] || 0) >= 7; }]
   ];

@@ -39,6 +39,8 @@
     { k: 'gent', n: 'Gentleman academy', d: 'Manners, calm and presence', i: 'award' },
     { k: 'skills', n: 'Life skills academy', d: 'Money, sleep, work, safety', i: 'bulb' },
     { k: 'count', n: 'Countdown board', d: 'Exams, birthdays, events', i: 'calendar' },
+    { k: 'dungeon', n: 'Dungeon gates', d: 'Reach real gates before time runs out', i: 'map' },
+    { k: 'wardrobe', n: 'Wardrobe', d: 'A new outfit idea every day', i: 'hanger' },
     { k: 'voice', n: 'Voice memos', d: 'Capture ideas by talking', i: 'mic' }
   ];
   var HOME_TILES = ['ai', 'story', 'habits', 'plan', 'focus', 'notes'];
@@ -180,8 +182,8 @@
   var GROUPS = [
     ['Companion', ['ai', 'lang', 'story', 'write']],
     ['Learn', ['quiz', 'facts', 'lib', 'cards', 'gent', 'skills']],
-    ['Body', ['move', 'reps', 'run']],
-    ['Daily life', ['habits', 'plan', 'focus', 'mood', 'notes', 'count', 'spend', 'chef']],
+    ['Body', ['move', 'reps', 'run', 'dungeon']],
+    ['Daily life', ['wardrobe', 'habits', 'plan', 'focus', 'mood', 'notes', 'count', 'spend', 'chef']],
     ['Together', ['online', 'friends', 'board']],
     ['More', ['watch', 'voice']]
   ];

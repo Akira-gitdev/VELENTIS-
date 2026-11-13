@@ -68,18 +68,14 @@
   var inv = { sel: null };
   var CLASS = { strength: 'Vanguard', endurance: 'Wayfarer', knowledge: 'Scholar', discipline: 'Warden', practical: 'Artisan', communication: 'Bard' };
   var ATTR_ICON = { strength: 'activity', endurance: 'route', knowledge: 'book', discipline: 'timer', practical: 'chef', communication: 'lang' };
-  var SLOTS = [
-    ['Helm', 'discipline', 'timer'], ['Amulet', 'communication', 'lang'], ['Tome', 'knowledge', 'book'], ['Cloak', 'lvl5', 'shield'],
-    ['Crown', 'lvl10', 'award'], ['Gauntlets', 'strength', 'activity'], ['Satchel', 'practical', 'chef'], ['Boots', 'endurance', 'route']
-  ];
+  var SLOT_ICON = ['timer', 'lang', 'book', 'shield', 'award', 'activity', 'chef', 'route'];
+  function gslots() { return V.gear.slots; }
   var SLOT_Y = [133, 270, 408, 546];
   function attrName(k) { return (core.ATTRS.filter(function (a) { return a[0] === k; })[0] || [k, k])[1]; }
-  function slotInfo(s, f) {
-    var k = s[1];
-    if (k === 'lvl5') return { on: f.li.level >= 5, need: 'Reach level 5' };
-    if (k === 'lvl10') return { on: f.li.level >= 10, need: 'Reach level 10' };
-    var lv = core.attrLevel(f.st.xp[k]).level;
-    return { on: lv >= 2, need: attrName(k) + ' level 2', lv: lv };
+  function slotInfo(i) {
+    var g = gslots()[i], t = V.gear.tier(g[0]), k = g[2];
+    var need = k === 'lvl5' ? 'Reach level 5' : k === 'lvl10' ? 'Reach level 10' : attrName(k) + ' level 2';
+    return { on: t > 0, t: t, need: need, name: V.gear.name(g[0]), label: g[1], col: V.gear.tierColor(t) };
   }
   function renderInventory() {
     var f = facts(), li = f.li, st = f.st, top = 'knowledge', best = 0;
@@ -90,21 +86,20 @@
     var h = '';
     h += plaque([232, 12, 712, 84], 'Character', 'big');
     /* character crest */
-    var crest = '<div class="rm-in" style="height:100%;align-items:center;justify-content:center;gap:calc(var(--u)*1.6);text-align:center">' +
-      '<svg viewBox="0 0 100 120" style="width:44%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))" aria-hidden="true"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3C98A"/><stop offset="1" stop-color="#9B5E26"/></linearGradient></defs>' +
-      '<path d="M50 4 L92 18 V58 C92 88 72 106 50 116 C28 106 8 88 8 58 V18 Z" fill="url(#cg)" stroke="#FFF0D4" stroke-width="3"/>' +
-      '<path d="M50 14 L82 25 V58 C82 82 66 97 50 105 C34 97 18 82 18 58 V25 Z" fill="#2A1A10" stroke="#C98A3E" stroke-width="2"/>' +
-      '<text x="50" y="70" text-anchor="middle" font-family="Cinzel,serif" font-weight="700" font-size="40" fill="#FFD79A">' + li.level + '</text>' +
-      '<path d="M50 28 l3 7 7 .6 -5.3 4.7 1.7 7 -6.4 -3.8 -6.4 3.8 1.7 -7 -5.3 -4.7 7 -.6 z" fill="#E0A458" transform="translate(0,-6) scale(1) translate(0,0)"/></svg>' +
-      '<div style="font-family:var(--serif);font-weight:700;font-size:calc(var(--u)*5)">' + esc(f.name) + '</div>' +
-      '<div class="rm-muted" style="font-size:calc(var(--u)*3.2)">' + title + ' · Level ' + li.level + '</div>' +
-      '<div style="width:70%">' + bar(li.pct) + '</div><div class="rm-small rm-muted">' + st.total + ' XP total · ' + (li.need - li.into) + ' to next level</div></div>';
+    var pic = V.avatar.portrait();
+    var crest = '<div class="rm-in" style="height:100%;align-items:center;justify-content:center;gap:calc(var(--u)*1);text-align:center">' +
+      '<div style="filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))">' + V.avatar.svg({ h: 'calc(var(--u)*38)' }) + '</div>' +
+      '<div style="font-family:var(--serif);font-weight:700;font-size:calc(var(--u)*4.4);line-height:1.1">' + esc(f.name) + '</div>' +
+      '<div class="rm-muted" style="font-size:calc(var(--u)*2.9)">' + title + ' · Level ' + li.level + '</div>' +
+      '<div style="width:66%">' + bar(li.pct) + '</div></div>' +
+      (pic ? '<img src="' + esc(pic) + '" alt="" style="position:absolute;left:4%;top:3%;width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:50%;object-fit:cover;border:2px solid #E0A458">' : '');
     h += at('', [262, 100, 684, 640], crest);
+    h += btn('', [584, 108, 676, 168], ic('palette') + '<span class="t">Edit</span>', 'data-act="go" data-to="avatar" aria-label="Customise your hero"', 'flex-direction:column');
     /* equipment slots */
-    SLOTS.forEach(function (s, i) {
-      var left = i < 4, x0 = left ? 100 : 728, y0 = SLOT_Y[i % 4], info = slotInfo(s, f);
+    gslots().forEach(function (g, i) {
+      var left = i < 4, x0 = left ? 100 : 728, y0 = SLOT_Y[i % 4], info = slotInfo(i);
       h += btn('rm-cell ' + (info.on ? 'on' : 'off') + (inv.sel && inv.sel.t === 's' && inv.sel.i === i ? ' sel' : ''), [x0, y0, x0 + 114, y0 + 112],
-        ic(info.on ? s[2] : 'lock') + '<span class="t">' + (info.on ? s[0] : 'Locked') + '</span>', 'data-act="rm-inv" data-t="s" data-i="' + i + '" aria-label="' + s[0] + (info.on ? ', equipped' : ', locked') + '"', 'padding:0');
+        ic(info.on ? SLOT_ICON[i] : 'lock') + '<span class="t">' + (info.on ? esc(g[1]) : 'Locked') + '</span>', 'data-act="rm-inv" data-t="s" data-i="' + i + '" aria-label="' + g[1] + (info.on ? ', ' + V.gear.tiers[info.t] : ', locked') + '"', 'padding:0;' + (info.on ? 'border-color:' + info.col + ';color:' + info.col : ''));
     });
     /* attributes */
     h += plaque([60, 730, 512, 774], 'Attributes');
@@ -134,8 +129,8 @@
     h += plaque([66, 1476, 286, 1512], 'Details');
     var det = '<div class="rm-muted">Tap a slot or a badge to see what it is.</div>';
     if (inv.sel && inv.sel.t === 's') {
-      var s = SLOTS[inv.sel.i], inf = slotInfo(s, f);
-      det = '<b>' + s[0] + '</b>' + (inf.on ? '<div class="rm-muted">Equipped. Earned through ' + esc(attrName(s[1] === 'lvl5' || s[1] === 'lvl10' ? top : s[1])) + '.</div>' : '<div class="rm-muted">Locked. ' + inf.need + ' to unlock.</div>');
+      var inf = slotInfo(inv.sel.i);
+      det = '<b style="color:' + (inf.on ? inf.col : 'inherit') + '">' + esc(inf.on ? inf.name : inf.label) + '</b>' + (inf.on ? '<div class="rm-muted">' + (inf.t < 4 ? 'Win dungeons to upgrade it.' : 'Fully upgraded.') + '</div>' : '<div class="rm-muted">Locked. ' + inf.need + ' to unlock.</div>');
     } else if (inv.sel && inv.sel.t === 'a') {
       var g = ach.filter(function (x) { return x.id === inv.sel.id; })[0];
       if (g) det = '<b>' + esc(g.name) + '</b><div class="rm-muted">' + esc(g.text) + '</div><div style="color:#E0A458">' + (g.on ? 'Earned ' + esc(u.niceDate(g.date)) : 'Not yet earned') + '</div>';
@@ -167,7 +162,7 @@
     h += at('rm-in', [176, 32, 676, 104], '<div style="font-family:var(--serif);font-weight:700;font-size:calc(var(--u)*3.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + ' <span class="rm-muted" style="font-family:var(--font);font-weight:500;font-size:calc(var(--u)*2.5)">' + li.into + ' / ' + li.need + ' XP</span></div>' + bar(li.pct, 'margin-top:calc(var(--u)*1.2)'), 'justify-content:center');
     h += at('rm-in', [724, 30, 920, 106], '<div style="font-family:var(--serif);font-weight:700;font-size:calc(var(--u)*3.6);line-height:1">' + f.areas + '</div><div class="rm-muted" style="font-size:calc(var(--u)*2)">areas explored</div>', 'justify-content:center;align-items:center;text-align:center');
     /* left tool strip */
-    var tools = [['run', 'route', 'Run tracker'], ['reps', 'camera', 'Rep counter'], ['move', 'activity', 'Workout log'], ['board', 'trophy', 'Leaderboards']];
+    var tools = [['run', 'route', 'Run tracker'], ['dungeon', 'map', 'Dungeon gates'], ['reps', 'camera', 'Rep counter'], ['move', 'activity', 'Workout log']];
     tools.forEach(function (t, i) {
       var y0 = 196 + i * 92;
       h += btn('', [24, y0, 106, y0 + 82], ic(t[1]), 'data-act="open" data-k="' + t[0] + '" aria-label="' + t[2] + '"');
@@ -189,10 +184,10 @@
      WORKSHOP
      ============================================================= */
   var DEPTS = [
-    { n: 'SELF', plaque: [110, 432, 375, 478], b: [56, 488, 428, 728], tools: [['habits', 'check', 'Habits'], ['mood', 'smile', 'Mood'], ['focus', 'timer', 'Focus'], ['plan', 'list', 'Planner']], cols: 2 },
+    { n: 'SELF', plaque: [110, 432, 375, 478], b: [56, 488, 428, 728], tools: [['habits', 'check', 'Habits'], ['mood', 'smile', 'Mood'], ['focus', 'timer', 'Focus'], ['plan', 'list', 'Planner'], ['wardrobe', 'hanger', 'Wardrobe'], ['avatar', 'user', 'Hero']], cols: 3 },
     { n: 'MIND', plaque: [565, 432, 830, 478], b: [514, 488, 878, 728], tools: [['quiz', 'help', 'Quiz'], ['facts', 'globe', 'Myths'], ['lib', 'book', 'Library'], ['cards', 'layers', 'Cards'], ['gent', 'award', 'Academy'], ['notes', 'notes', 'Notes']], cols: 3 },
     { n: 'LIFE', plaque: [110, 792, 375, 838], b: [56, 848, 428, 1092], tools: [['spend', 'wallet', 'Money'], ['chef', 'chef', 'Chef'], ['skills', 'bulb', 'Skills'], ['count', 'timer', 'Events'], ['watch', 'play', 'Watch'], ['voice', 'mic', 'Voice']], cols: 3 },
-    { n: 'WORLD', plaque: [565, 792, 830, 838], b: [514, 848, 878, 1092], tools: [['run', 'route', 'Run'], ['reps', 'camera', 'Reps'], ['move', 'activity', 'Workout']], cols: 3 },
+    { n: 'WORLD', plaque: [565, 792, 830, 838], b: [514, 848, 878, 1092], tools: [['run', 'route', 'Run'], ['reps', 'camera', 'Reps'], ['move', 'activity', 'Workout'], ['dungeon', 'map', 'Dungeon']], cols: 2 },
     { n: 'INTELLIGENCE', plaque: [290, 1152, 655, 1200], b: [54, 1210, 888, 1468], tools: [['ai', 'spark', 'Vel'], ['lang', 'lang', 'Languages'], ['story', 'compass', 'Adventure'], ['write', 'pen', 'Writing']], cols: 4, wide: true }
   ];
   function renderWorkshop() {

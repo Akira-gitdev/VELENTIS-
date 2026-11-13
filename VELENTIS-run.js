@@ -117,8 +117,8 @@
     var g = geo(), opts = { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 };
     if (g) {
       var dead = false;
-      g.watchPosition(opts, function (p, err) { if (dead) return; if (err || !p) onErr({ code: err && /denied|permission/i.test(err.message || '') ? 1 : 2 }); else onPos(wrapPos(p)); })
-        .then(function (id) { watchId = id; });
+      var ret = g.watchPosition(opts, function (p, err) { if (dead) return; if (err || !p) onErr({ code: err && /denied|permission/i.test(err.message || '') ? 1 : 2 }); else onPos(wrapPos(p)); });
+      Promise.resolve(ret).then(function (id) { watchId = id; }, function () { onErr({ code: 2 }); });
     } else watchId = navigator.geolocation.watchPosition(onPos, onErr, opts);
   }
   function start() {

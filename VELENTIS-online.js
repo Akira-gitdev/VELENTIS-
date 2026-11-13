@@ -65,7 +65,7 @@
   }
   function snapshotData() {
     var d = {}, i, k;
-    for (i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k && k.indexOf('velentis.') === 0 && k !== SK && k !== YK && k !== 'velentis.ai.v1' && k !== 'velentis.logo.theme') d[k] = localStorage.getItem(k); }
+    for (i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k && k.indexOf('velentis.') === 0 && k !== SK && k !== YK && k !== 'velentis.ai.v1' && k !== 'velentis.wardrobe.v1' && k !== 'velentis.logo.theme') d[k] = localStorage.getItem(k); }
     return d;
   }
   function pushAll() {
