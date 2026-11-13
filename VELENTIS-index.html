@@ -66,6 +66,20 @@
 
 <iframe id="intro" title="Velentis intro" src="about:blank" hidden style="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:1000;background:#0A0A0B;transition:opacity .5s ease"></iframe>
 
+<script>
+/* never show a blank screen: if anything breaks, say what */
+(function () {
+  function show(m) {
+    try {
+      var d = document.getElementById('errbar');
+      if (!d) { d = document.createElement('div'); d.id = 'errbar'; d.setAttribute('role', 'alert'); d.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:99999;background:#3a1010;color:#ffd9d0;border:1px solid #c0503a;border-radius:10px;padding:10px 12px;font:12px/1.35 sans-serif;max-height:30vh;overflow:auto'; document.body.appendChild(d); d.onclick = function () { d.remove(); }; }
+      d.textContent = 'Something broke (tap to close): ' + m;
+    } catch (e) {}
+  }
+  window.addEventListener('error', function (e) { show((e.message || 'error') + (e.filename ? ' in ' + String(e.filename).split('/').pop() + ':' + e.lineno : '')); });
+  window.addEventListener('unhandledrejection', function (e) { show(String(e.reason && (e.reason.message || e.reason))); });
+})();
+</script>
 <script src="VELENTIS-config.js"></script>
 <script src="VELENTIS-core.js"></script>
 <script src="VELENTIS-app.js"></script>

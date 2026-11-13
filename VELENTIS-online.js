@@ -10,7 +10,7 @@
   if (typeof Y.auto !== 'boolean') Y.auto = true;
   if (typeof Y.visible !== 'boolean') Y.visible = true;
   function saveY() { u.put(YK, Y); }
-  var ui = { tab: 'login', msg: '', busy: false, sync: '', choose: null };
+  var ui = { tab: 'login', msg: '', busy: false, sync: '', choose: null, test: '' };
 
   /* ---------- talking to Supabase ---------- */
   function mkErr(status, body) {
@@ -24,7 +24,8 @@
     if (/invalid login|invalid credentials/.test(m)) return 'Wrong username or password.';
     if (/password/.test(m) && /(short|least|weak)/.test(m)) return 'Choose a longer password (at least 8 characters).';
     if (/rate|too many|over_/.test(m)) return 'Too many tries. Wait a minute and try again.';
-    return 'Something went wrong' + (e && e.status ? ' (error ' + e.status + ')' : '') + '. Try again.';
+    var raw = String((e && (e.raw || e.message)) || '').slice(0, 90);
+    return 'Something went wrong' + (e && e.status ? ' (error ' + e.status + ')' : '') + (raw ? ': ' + raw : '') + '. Tap "Test connection" below.';
   }
   function req(method, path, body, extra, retried) {
     var h = { 'apikey': CFG.key, 'Content-Type': 'application/json' };
@@ -125,6 +126,7 @@
         '<div class="card pad"><div class="chips"><button class="tag' + (ui.tab === 'login' ? ' on' : '') + '" data-act="on-tab" data-id="login">Log in</button><button class="tag' + (ui.tab === 'signup' ? ' on' : '') + '" data-act="on-tab" data-id="signup">Create account</button></div>' +
         '<form class="stack" id="authForm" novalidate style="gap:8px;margin-top:12px"><input class="field" id="auUser" maxlength="20" autocapitalize="none" autocomplete="username" spellcheck="false" placeholder="Username (letters, numbers, _)" aria-label="Username"><input class="field" id="auPass" type="password" autocomplete="' + (ui.tab === 'signup' ? 'new-password' : 'current-password') + '" placeholder="Password (8 or more characters)" aria-label="Password">' +
         '<button class="add" type="submit" style="width:100%"' + (ui.busy ? ' disabled' : '') + '>' + (ui.busy ? 'One moment...' : ui.tab === 'signup' ? 'Create account' : 'Log in') + '</button>' + (ui.msg ? '<div class="err">' + esc(ui.msg) + '</div>' : '') + '</form></div>' +
+        '<button class="link" data-act="on-test">Test connection</button>' + (ui.test ? '<div class="note" style="white-space:pre-line">' + esc(ui.test) + '</div>' : '') +
         '<p class="note">Your tools keep working without an account. An account backs up your data and lets you use two phones, add friends and join leaderboards. There is no email, so keep your password safe: it cannot be reset.</p>';
       return;
     }
@@ -217,7 +219,17 @@
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
     var a = t.getAttribute('data-act'), id = t.getAttribute('data-id');
-    if (a === 'on-tab') { ui.tab = id; ui.msg = ''; render(); }
+    if (a === 'on-test') {
+      ui.test = 'Checking...'; render();
+      fetch(CFG.url.replace(/\/$/, '') + '/auth/v1/settings', { headers: { apikey: CFG.key } }).then(function (r) {
+        return r.text().then(function (t) {
+          var j = null; try { j = JSON.parse(t); } catch (x) {}
+          if (!r.ok) { ui.test = 'The server answered with error ' + r.status + '. ' + String(t).slice(0, 120) + '\nCheck the URL and key in VELENTIS-config.js.'; return; }
+          var on = j && j.external && j.external.email, auto = j && j.mailer_autoconfirm, closed = j && j.disable_signup;
+          ui.test = 'Server reachable.\nEmail sign-in: ' + (on ? 'on' : 'OFF') + '\nConfirm email: ' + (auto ? 'off (good)' : 'ON (turn it off)') + '\nNew sign-ups: ' + (closed ? 'BLOCKED' : 'allowed');
+        });
+      }).catch(function (er) { ui.test = 'Could not reach the server: ' + String(er && er.message || er) + '\nCheck your internet, and the URL in VELENTIS-config.js.'; }).then(function () { render(); });
+    } else if (a === 'on-tab') { ui.tab = id; ui.msg = ''; render(); }
     else if (a === 'on-out') logout();
     else if (a === 'on-sync') { ui.busy = true; ui.msg = ''; render(); checkCloud(false).then(function () { return ui.choose ? null : pushAll(); }).catch(function (er) { ui.msg = plain(er); }).then(function () { ui.busy = false; render(); }); }
     else if (a === 'on-usecloud' && ui.choose) { applyCloud(ui.choose.data); Y.last = ui.choose.updated_at; saveY(); location.reload(); }
