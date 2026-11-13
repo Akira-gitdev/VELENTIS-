@@ -36,7 +36,7 @@ jobs:
           mkdir -p www
           cp VELENTIS-index.html www/index.html
           cp VELENTIS-intro.html www/intro.html
-          cp VELENTIS-*.js VELENTIS-*.css www/
+          cp VELENTIS-*.js VELENTIS-*.css VELENTIS-*.webp www/
 
       - name: Draw the app icon and start screen
         run: node VELENTIS-make-assets.mjs
