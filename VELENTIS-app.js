@@ -6,7 +6,7 @@
 
   var SKIN_KEY = 'velentis.skin';
   var SKINS = [
-    ['midnight', 'Midnight', 'Dark frosted glass'], ['ember', 'Ember', 'Warm soft clay'], ['calm', 'Calm', 'Sage and sand'],
+    ['realm', 'Realm', 'Warm wood and parchment'], ['midnight', 'Midnight', 'Dark frosted glass'], ['ember', 'Ember', 'Warm soft clay'], ['calm', 'Calm', 'Sage and sand'],
     ['glass', 'Glass', 'Light liquid glass'], ['neo', 'Neo', 'Slate with blue glow'], ['forest', 'Forest', 'Deep green glass'],
     ['ember-night', 'Ember night', 'Dark amber glass'], ['mono', 'Mono', 'Black and white glass'], ['mochi', 'Mochi', 'Flat paper and ink']
   ];
@@ -66,11 +66,15 @@
     current = name;
     V.views[name]();
     Object.keys(V.views).forEach(function (v) { var el = $('v-' + v); if (el) el.hidden = v !== name; });
-    [['home', 'home'], ['tools', 'tools'], ['me', 'me']].forEach(function (p) {
-      var b = $('n-' + p[0]); if (!b) return;
-      b.classList.toggle('on', p[1] === name);
-      if (p[1] === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    var NAVOF = { home: 'home', inventory: 'inventory', me: 'inventory', stats: 'inventory', look: 'inventory', world: 'world', run: 'world', reps: 'world', move: 'world',
+      messages: 'messages', online: 'messages', friends: 'messages', board: 'messages' };
+    var on = NAVOF[name] || 'workshop';
+    ['home', 'inventory', 'world', 'workshop', 'messages'].forEach(function (k) {
+      var b = $('n-' + k); if (!b) return;
+      b.classList.toggle('on', k === on);
+      if (k === on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
+    V.emit('view.enter', name);
   }
   function go(name) {
     if (location.hash === '#' + name) show(name); else location.hash = name;
@@ -84,12 +88,12 @@
 
   /* ---------- skins ---------- */
   function applySkin(id) {
-    if (!SKINS.some(function (s) { return s[0] === id; })) id = 'midnight';
+    if (!SKINS.some(function (s) { return s[0] === id; })) id = 'realm';
     document.documentElement.setAttribute('data-skin', id);
     return id;
   }
-  var skin = 'midnight';
-  try { skin = localStorage.getItem(SKIN_KEY) || 'midnight'; } catch (e) {}
+  var skin = 'realm';
+  try { skin = localStorage.getItem(SKIN_KEY) || 'realm'; } catch (e) {}
   skin = applySkin(skin);
 
   /* ---------- intro (the animated logo) ---------- */

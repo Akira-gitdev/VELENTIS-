@@ -1,0 +1,139 @@
+/* VELENTIS realm: the five painted scenes, the wooden nav, and the warm "realm" skin.
+   Every scene is the original artwork. Interface pieces sit on top, placed by percent so they line up on any phone. */
+
+:root, [data-skin="realm"] {
+  --bg: #1A120D; --fg: #F6EAD8; --muted: rgba(246,234,216,.7);
+  --card: rgba(42,29,21,.88); --card-line: rgba(201,146,88,.38);
+  --blur: 4px; --shadow: 0 6px 18px rgba(0,0,0,.35); --inset: none;
+  --accent: #E0A458; --on-accent: #2A1704; --track: rgba(255,255,255,.14); --field: rgba(0,0,0,.3);
+  --orb1: transparent; --orb2: transparent; --orb3: transparent;
+  --radius: 14px; --label-case: uppercase; --label-track: .12em;
+  --wood-hi: #B27646; --wood: #7E4F2E; --wood-lo: #4A2D1A; --ink: #3B2A1C; --paper: #E3D0B2;
+  --serif: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --navh: calc(66px + env(safe-area-inset-bottom, 0px));
+  color-scheme: dark;
+}
+[data-skin="realm"] .orbs { display: none; }
+
+/* painted backdrop behind everything; blurred and dimmed so it only fills the edges */
+.stage { position: fixed; inset: -20px; z-index: 0; background: #120C08 center / cover no-repeat; filter: blur(16px) brightness(.5); transform: translateZ(0); transition: background-image .2s; }
+.stage.tool { filter: blur(7px) brightness(.32); }
+:root:not([data-skin="realm"]) .stage { display: none; }
+
+/* ---------- wooden nav ---------- */
+[data-skin="realm"] .nav {
+  height: var(--navh); padding: 0 6px env(safe-area-inset-bottom, 0px); gap: 0; justify-content: space-between;
+  background: linear-gradient(#5A3720, #3A2316 55%, #2A190F); border-top: 2px solid var(--wood-hi);
+  box-shadow: 0 -6px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,226,180,.25);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+[data-skin="realm"] .nav > * { max-width: none; }
+[data-skin="realm"] .nav button { flex: 1; height: 100%; min-width: 0; color: rgba(246,234,216,.62); font-family: var(--serif); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: none; position: relative; }
+[data-skin="realm"] .nav button .i { width: 24px; height: 24px; }
+[data-skin="realm"] .nav button.on { color: #FFD79A; }
+[data-skin="realm"] .nav button.on::before { content: ''; position: absolute; top: 5px; left: 18%; right: 18%; height: 3px; border-radius: 3px; background: #E0A458; box-shadow: 0 0 10px #E0A458; }
+
+/* ---------- scene frame ---------- */
+.view.realm {
+  position: fixed; left: 0; right: 0; top: 0; bottom: var(--navh); z-index: 2;
+  display: flex; align-items: center; justify-content: center; padding: 0; gap: 0; overflow: hidden;
+}
+.view.realm[hidden] { display: none; }
+.scene {
+  --u: calc(min(100vw, (100vh - var(--navh)) * 0.56278) / 100);
+  position: relative; flex: none; aspect-ratio: 941 / 1672;
+  width: min(100vw, calc((100vh - var(--navh)) * 941 / 1672));
+  width: min(100vw, calc((100dvh - var(--navh)) * 941 / 1672));
+  background: #120C08 center / 100% 100% no-repeat; color: var(--fg); font-family: var(--font);
+  font-size: calc(var(--u) * 3.2); line-height: 1.25; overflow: hidden;
+  box-shadow: 0 0 40px rgba(0,0,0,.5);
+}
+.scene[data-bg="home"] { background-image: url(VELENTIS-bg-home.webp); }
+.scene[data-bg="inventory"] { background-image: url(VELENTIS-bg-inventory.webp); }
+.scene[data-bg="world"] { background-image: url(VELENTIS-bg-world.webp); }
+.scene[data-bg="workshop"] { background-image: url(VELENTIS-bg-workshop.webp); }
+.scene[data-bg="messages"] { background-image: url(VELENTIS-bg-messages.webp); }
+@supports (height: 100dvh) { .scene { --u: calc(min(100vw, (100dvh - var(--navh)) * 0.56278) / 100); } }
+.scene, .scene * { box-sizing: border-box; }
+.scene > * { position: absolute; }
+.scene button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+
+/* text sitting on a painted plaque */
+.rm-plaque { display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--serif); font-weight: 700; letter-spacing: .06em; color: #F8E2BC; text-shadow: 0 1px 0 #2A170C, 0 0 6px rgba(0,0,0,.4); font-size: calc(var(--u) * 3.1); white-space: nowrap; overflow: hidden; }
+.rm-plaque.big { font-size: calc(var(--u) * 4.2); }
+.rm-plaque.dark { color: #3B2A1C; text-shadow: 0 1px 0 rgba(255,236,200,.5); }
+
+/* content boxes that sit inside a painted frame */
+.rm-in { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.rm-scroll { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.rm-scroll::-webkit-scrollbar { display: none; }
+.rm-row { display: flex; align-items: center; gap: calc(var(--u) * 1.6); min-width: 0; }
+.rm-txt { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rm-muted { color: var(--muted); }
+.rm-small { font-size: calc(var(--u) * 2.5); }
+.rm-big { font-family: var(--serif); font-weight: 700; font-size: calc(var(--u) * 7); line-height: 1; }
+.rm-ink { color: var(--ink); }
+.rm-ink .rm-muted { color: rgba(59,42,28,.7); }
+.rm-bar { height: calc(var(--u) * 1.5); border-radius: 99px; background: rgba(255,255,255,.16); overflow: hidden; flex: none; }
+.rm-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #E0A458, #FFD79A); }
+.rm-ink .rm-bar { background: rgba(59,42,28,.2); }
+.rm-ink .rm-bar i { background: linear-gradient(90deg, #A66B2E, #D49A55); }
+.ic { width: calc(var(--u) * 4.6); height: calc(var(--u) * 4.6); flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* tappable pieces */
+.rm-btn {
+  display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 1.4); border-radius: calc(var(--u) * 1.8);
+  border: 1px solid rgba(224,164,88,.45); background: rgba(224,164,88,.14); color: #F8E2BC; cursor: pointer; padding: 0 calc(var(--u) * 1.6);
+  font-weight: 600; text-align: center; transition: background .12s, transform .12s;
+}
+.rm-btn:active { transform: scale(.96); background: rgba(224,164,88,.32); }
+.rm-btn.solid { background: linear-gradient(#EAB468, #C98A3E); color: #2A1704; border-color: #F3C98A; font-weight: 700; }
+.rm-btn.solid:active { background: #C98A3E; }
+.rm-btn.paper { background: rgba(120,80,40,.14); border-color: rgba(120,80,40,.5); color: var(--ink); }
+.rm-btn.stack { flex-direction: column; gap: calc(var(--u) * .6); }
+.rm-btn[disabled], .rm-btn.locked { opacity: .45; }
+.rm-btn.on { background: rgba(224,164,88,.38); border-color: #FFD79A; }
+.rm-btn.paper.on { background: rgba(166,107,46,.34); border-color: #8A5424; }
+.rm-btn .t { font-size: calc(var(--u) * 2.6); line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* dark wood glass card used where the art is open (home, top bars) */
+.rm-card { border-radius: calc(var(--u) * 2.4); border: 1.5px solid rgba(201,146,88,.6); background: linear-gradient(rgba(52,34,23,.9), rgba(32,21,14,.92)); box-shadow: 0 6px 16px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,226,180,.18); padding: calc(var(--u) * 2.2); }
+
+/* home hotspots over the painted room */
+.rm-spot { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * .8); background: none; border: 0; padding: 0; cursor: pointer; }
+.rm-spot b { width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: 50%; display: grid; place-items: center; background: rgba(32,21,14,.72); border: 1.5px solid #F3C98A; color: #FFD79A; box-shadow: 0 0 0 0 rgba(255,215,154,.6); animation: spot 2.4s ease-out infinite; }
+.rm-spot b .ic { width: calc(var(--u) * 4.8); height: calc(var(--u) * 4.8); }
+.rm-spot span { font-family: var(--serif); font-weight: 700; font-size: calc(var(--u) * 2.6); color: #FFF0D4; background: rgba(32,21,14,.78); padding: calc(var(--u) * .5) calc(var(--u) * 1.6); border-radius: 99px; }
+@keyframes spot { 0% { box-shadow: 0 0 0 0 rgba(255,215,154,.55); } 70% { box-shadow: 0 0 0 calc(var(--u) * 3.2) rgba(255,215,154,0); } 100% { box-shadow: 0 0 0 0 rgba(255,215,154,0); } }
+@media (prefers-reduced-motion: reduce) { .rm-spot b { animation: none; } }
+
+/* world pins */
+.rm-pin { transform: translate(-50%, -100%); background: none; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.rm-pin b { width: calc(var(--u) * 8); height: calc(var(--u) * 8); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: linear-gradient(#EAB468, #B8772F); border: 2px solid #FFF0D4; display: grid; place-items: center; box-shadow: 0 3px 8px rgba(0,0,0,.5); }
+.rm-pin b > * { transform: rotate(45deg); }
+.rm-pin.locked b { background: linear-gradient(#7C7C86, #4A4A55); }
+.rm-pin.sel b { outline: 3px solid #FFF; }
+.rm-pin .ic { width: calc(var(--u) * 4); height: calc(var(--u) * 4); color: #2A1704; }
+.rm-pin.locked .ic { color: #E5E5EA; }
+
+/* equipment and badge cells */
+.rm-cell { border-radius: calc(var(--u) * 1.4); border: 1px solid rgba(201,146,88,.35); background: rgba(0,0,0,.2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * .4); color: #F6EAD8; padding: 0; min-width: 0; }
+.rm-cell.off { color: rgba(246,234,216,.32); }
+.rm-cell.on { background: rgba(224,164,88,.2); border-color: #E0A458; color: #FFD79A; }
+.rm-cell.sel { outline: 2px solid #FFD79A; }
+.rm-cell .t { font-size: calc(var(--u) * 2); line-height: 1; max-width: 96%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* tool screens (the old pages) get a little extra room above the nav and a warm look */
+[data-skin="realm"] .app { padding-bottom: calc(var(--navh) + var(--s5)); }
+[data-skin="realm"] h1, [data-skin="realm"] .topbar h1 { font-family: var(--serif); letter-spacing: .03em; }
+[data-skin="realm"] .eyebrow { color: #E0A458; }
+[data-skin="realm"] .card { background: var(--card); }
+.rm-btn.stack { padding: 0 calc(var(--u) * .4); }
+.rm-btn.stack .t { font-size: calc(var(--u) * 2.25); }
+.view.realm { animation: none; }
+.rm-pin { position: absolute; }
+.rm-pin::before { content: ''; position: absolute; inset: -40% -40% -10% -40%; }
+/* the app-wide press effect must not move things that are placed with a transform */
+.rm-spot:active { transform: translate(-50%, -50%); }
+.rm-pin:active { transform: translate(-50%, -100%); }
+.rm-spot:active b, .rm-pin:active b { filter: brightness(1.15); }

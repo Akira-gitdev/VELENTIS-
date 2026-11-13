@@ -26,7 +26,7 @@
   u.bar = function (attrs, title, extra) {
     return '<div class="topbar"><button class="icon-btn" ' + attrs + ' aria-label="Back">' + u.ic('back') + '</button><h1>' + u.esc(title) + '</h1>' + (extra || '') + '</div>';
   };
-  u.BACK_TOOLS = 'data-act="go" data-to="tools"';
+  u.BACK_TOOLS = 'data-act="go" data-to="workshop"';
 
   /* ---------- events ---------- */
   var handlers = {};
