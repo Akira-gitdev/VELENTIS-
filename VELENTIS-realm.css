@@ -137,3 +137,39 @@
 .rm-spot:active { transform: translate(-50%, -50%); }
 .rm-pin:active { transform: translate(-50%, -100%); }
 .rm-spot:active b, .rm-pin:active b { filter: brightness(1.15); }
+
+/* ---------- avatar editor ---------- */
+.swrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 10px; }
+.sw { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); padding: 0; }
+.sw.on { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pick { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.pick input { width: 54px; height: 34px; border: 0; background: none; padding: 0; }
+.chk { display: flex; align-items: center; gap: 10px; margin: 12px 0 6px; font-size: 14px; }
+.chk input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.avprev { display: flex; align-items: center; gap: 16px; }
+.avstage { flex: none; background: radial-gradient(ellipse closest-side at 50% 45%, rgba(224,164,88,.28), transparent); border-radius: 16px; padding: 4px 8px; }
+.avinfo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.avpic { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
+.avbody { display: flex; flex-direction: column; gap: 4px; }
+.avbody textarea { min-height: 76px; resize: none; margin-bottom: 8px; }
+.portrait img { width: 100%; max-width: 280px; border-radius: 14px; display: block; margin: 12px auto; border: 2px solid var(--card-line); }
+.portrait.small img { max-width: 120px; border-radius: 50%; }
+
+/* ---------- dungeon ---------- */
+.rank { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; font-family: var(--serif); font-weight: 700; font-size: 20px; color: #1b1208; flex: none; border: 2px solid rgba(255,255,255,.4); }
+.rank.big { width: 56px; height: 56px; font-size: 30px; }
+.rank.r0 { background: #A9A9B0; } .rank.r1 { background: #7DBB7A; } .rank.r2 { background: #7FB0E0; } .rank.r3 { background: #B590E8; } .rank.r4 { background: #F0A04A; } .rank.r5 { background: linear-gradient(#FFE08A, #E0A030); box-shadow: 0 0 12px #F2C14E; }
+.radar { width: min(260px, 70%); display: block; margin: 12px auto; }
+
+/* ---------- wardrobe ---------- */
+.wthumb { display: inline-block; width: 64px; height: 64px; border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,.25); flex: none; }
+.wthumb.big { width: 84px; height: 84px; }
+.wthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+.outfit { margin-bottom: 2px; }
+.clgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.cl { position: relative; background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.cl .nm { font-weight: 700; font-size: 14px; }
+.cl .icon-btn { position: absolute; top: 6px; right: 6px; }
+.wdform { display: flex; flex-direction: column; gap: 4px; }
+.avimg { display: block; max-width: 100%; object-fit: contain; }

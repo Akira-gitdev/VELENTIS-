@@ -1,6 +1,7 @@
 /* VELENTIS avatar and gear.
-   The hero is drawn in layers (body, hair, outfit, then one layer per gear slot), so changing the look or earning gear
-   always fits. A free image service can also make a portrait from a text prompt. Everything is saved on this phone. */
+   The hero is built from painted layers (body, bottom, top, hair) that are tinted on the fly, so skin tone, hair colour and clothes
+   can be any colour. Earned gear shows as an aura and in the Inventory slots. A free image service can also make a portrait
+   from a text prompt. Everything is saved on this phone. */
 (function () {
   'use strict';
   var V = window.Velentis, u = V.u, $ = u.$, esc = u.esc, ic = u.ic, core = V.core;
@@ -41,89 +42,104 @@
   V.gear = { slots: SLOTS, tiers: TIERS, tierColor: function (t) { return TIER_COL[t] || '#777'; }, tier: tier, base: base, name: gearName, drop: drop,
     owned: function () { return SLOTS.filter(function (s) { return tier(s[0]) > 0; }).length; } };
 
+
   /* =============================================================
-     LOOK
+     LOOK: painted layers that are tinted with the chosen colours
      ============================================================= */
-  var AK = 'velentis.avatar.v1';
-  var DEF = { skin: '#E8B58E', hair: 'short', hairColor: '#3B2A20', eyes: '#4A7A9B', top: 'tunic', topColor: '#5B7BA6', bottomColor: '#4A3B30', acc: 'none', match: false, portrait: '', note: '' };
+  var AK = 'velentis.avatar.v2';
+  var KITS = {
+    f: { name: 'Female', ratio: 612 / 1292,
+      tops: [['top1', 'Tee']], bots: [['bot1', 'Slim pants']],
+      hairs: [['h1', 'Bob'], ['h2', 'Ponytail'], ['h3', 'Messy crop'], ['h4', 'Side part'], ['h5', 'Braids'], ['h6', 'Long waves']], backs: { h6: 'h6b' } },
+    m: { name: 'Male', ratio: 412 / 1197,
+      tops: [['top1', 'Tee']], bots: [['bot1', 'Long pants'], ['bot2', 'Shorts']],
+      hairs: [['h1', 'Side fringe'], ['h2', 'Tufted'], ['h3', 'Swept'], ['h4', 'Messy crop'], ['h5', 'Layered long']],
+      faces: [['f0', 'Calm'], ['f1', 'Smirk'], ['f2', 'Blank'], ['f3', 'Angry'], ['f4', 'Shy']], backs: {} }
+  };
+  var DEF = { body: 'm', skin: '#E8B58E', hair: 'h1', face: 'f0', hairColor: '#3B2A20', top: 'top1', topColor: '#5B7BA6', bot: 'bot1', bottomColor: '#3C3C42', match: false, portrait: '' };
   var A = u.get(AK, null);
   A = Object.assign({}, DEF, A && typeof A === 'object' ? A : {});
-  function asave() { u.put(AK, A); }
+  function fix() {
+    var k = KITS[A.body] || KITS.m; if (!KITS[A.body]) A.body = 'm';
+    function has(list, id) { return list.some(function (x) { return x[0] === id; }); }
+    if (!has(k.hairs, A.hair)) A.hair = k.hairs[0][0];
+    if (!has(k.tops, A.top)) A.top = k.tops[0][0];
+    if (!has(k.bots, A.bot)) A.bot = k.bots[0][0];
+    if (k.faces && !has(k.faces, A.face)) A.face = k.faces[0][0];
+  }
+  fix();
+  function asave() { fix(); u.put(AK, A); }
   var SKINS = ['#FBD9BF', '#F1C7A0', '#E8B58E', '#D69E73', '#BC8156', '#9A6540', '#734A30', '#4F3222'];
-  var EYES = ['#4A7A9B', '#3F8F5B', '#7A5232', '#2E2E36', '#8A6BC4', '#B04A4A'];
   var HAIRC = ['#1C1612', '#3B2A20', '#6B4A2E', '#A8743A', '#D9B25A', '#C7C7CF', '#B5483C', '#2F5D8C', '#3E7A55', '#7B4DB3'];
   var CLOTH = ['#1F1F24', '#F2EDE4', '#8C8C93', '#2B3A5C', '#5B7BA6', '#3E6B52', '#7A8F4B', '#8A5A3B', '#C9A27A', '#A33B3B', '#D18A3C', '#7B4DB3', '#D7889A', '#2E7F86'];
-  var HAIRS = [['short', 'Short'], ['spiky', 'Spiky'], ['long', 'Long'], ['bun', 'Bun'], ['curly', 'Curly'], ['buzz', 'Buzz']];
-  var TOPS = [['tee', 'Tee'], ['tunic', 'Tunic'], ['robe', 'Robe']];
-  var ACCS = [['none', 'None'], ['glasses', 'Glasses'], ['scarf', 'Scarf'], ['headband', 'Headband']];
 
-  function hexRGB(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join(''); var n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
-  function shade(h, a) { var c = hexRGB(h).map(function (v) { return Math.max(0, Math.min(255, Math.round(a < 0 ? v * (1 + a) : v + (255 - v) * a))); }); return '#' + c.map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join(''); }
   function look() { return A; }
-
   /* colours of today's real outfit from the Wardrobe, when the player asks for the match */
   function todaysFit() { return V.wardrobe && V.wardrobe.today ? V.wardrobe.today() : null; }
 
-  function svg(o) {
-    o = o || {};
-    var L = Object.assign({}, A, o.look || {});
-    var fit = L.match ? todaysFit() : null;
-    var topC = (fit && fit.top) || L.topColor, botC = (fit && fit.bottom) || L.bottomColor;
-    var sk = L.skin, skD = shade(sk, -.14), hc = L.hairColor, hcD = shade(hc, -.25), tcD = shade(topC, -.22), bcD = shade(botC, -.22);
-    var T = function (k) { return o.nogear ? 0 : tier(k); };
-    var col = function (k) { return TIER_COL[T(k)]; };
-    var glow = function (k, inner) { var t = T(k); return t >= 3 ? '<g style="filter:drop-shadow(0 0 ' + (t >= 4 ? 5 : 3) + 'px ' + TIER_COL[t] + ')">' + inner + '</g>' : inner; };
-    var s = '';
-    /* behind everything */
-    if (T('cloak')) s += glow('cloak', '<path d="M60 124 L140 124 L166 288 Q100 306 34 288 Z" fill="' + shade(col('cloak'), -.35) + '" stroke="' + shade(col('cloak'), -.6) + '" stroke-width="2"/>');
-    if (L.hair === 'long') s += '<path d="M56 66 Q54 18 100 18 Q146 18 144 66 L150 156 Q100 170 50 156 Z" fill="' + hcD + '"/>';
-    /* legs and boots */
-    s += '<rect x="72" y="198" width="27" height="98" rx="8" fill="' + botC + '"/><rect x="101" y="198" width="27" height="98" rx="8" fill="' + botC + '"/><rect x="99" y="200" width="2" height="94" fill="' + bcD + '"/>';
-    var bootC = T('boots') ? col('boots') : '#4A3426';
-    s += glow('boots', '<path d="M68 292 h34 v18 q0 10 -10 10 h-26 q-8 0 -8 -8 q0 -6 10 -8 z" fill="' + bootC + '" stroke="' + shade(bootC, -.4) + '" stroke-width="2"/><path d="M98 292 h34 v18 q0 10 -10 10 h-26 q-8 0 -8 -8 q0 -6 10 -8 z" transform="translate(30 0) scale(1 1)" fill="' + bootC + '" stroke="' + shade(bootC, -.4) + '" stroke-width="2"/>');
-    /* torso by style */
-    var torso;
-    if (L.top === 'tee') torso = '<rect x="62" y="122" width="76" height="86" rx="14" fill="' + topC + '"/>';
-    else if (L.top === 'robe') torso = '<path d="M62 122 h76 q8 70 14 148 q-52 10 -104 0 q6 -78 14 -148 z" fill="' + topC + '"/><path d="M100 124 L100 268" stroke="' + tcD + '" stroke-width="2"/><rect x="62" y="186" width="76" height="9" fill="' + tcD + '"/>';
-    else torso = '<path d="M62 122 h76 q4 40 12 112 q-50 10 -100 0 q8 -72 12 -112 z" fill="' + topC + '"/><rect x="64" y="190" width="72" height="9" rx="3" fill="' + tcD + '"/>';
-    s += torso;
-    /* arms */
-    var sl = L.top === 'tee' ? 30 : 48;
-    s += '<rect x="42" y="126" width="21" height="76" rx="10" fill="' + sk + '"/><rect x="137" y="126" width="21" height="76" rx="10" fill="' + sk + '"/>' +
-      '<rect x="42" y="126" width="21" height="' + sl + '" rx="10" fill="' + topC + '"/><rect x="137" y="126" width="21" height="' + sl + '" rx="10" fill="' + topC + '"/>' +
-      '<circle cx="52" cy="204" r="9" fill="' + sk + '"/><circle cx="148" cy="204" r="9" fill="' + sk + '"/>';
-    if (T('gauntlets')) s += glow('gauntlets', '<rect x="40" y="164" width="25" height="30" rx="6" fill="' + col('gauntlets') + '" stroke="' + shade(col('gauntlets'), -.4) + '" stroke-width="2"/><rect x="135" y="164" width="25" height="30" rx="6" fill="' + col('gauntlets') + '" stroke="' + shade(col('gauntlets'), -.4) + '" stroke-width="2"/>');
-    /* neck and head */
-    s += '<rect x="90" y="104" width="20" height="24" rx="6" fill="' + skD + '"/>';
-    if (L.acc === 'scarf') s += '<rect x="82" y="112" width="36" height="14" rx="7" fill="#B5483C"/><rect x="104" y="120" width="12" height="34" rx="5" fill="#B5483C"/>';
-    s += '<circle cx="60" cy="76" r="7" fill="' + sk + '"/><circle cx="140" cy="76" r="7" fill="' + sk + '"/><ellipse cx="100" cy="72" rx="40" ry="44" fill="' + sk + '"/>';
-    /* face */
-    s += '<ellipse cx="84" cy="78" rx="8" ry="9" fill="#fff"/><ellipse cx="116" cy="78" rx="8" ry="9" fill="#fff"/>' +
-      '<circle cx="85" cy="79" r="5.2" fill="' + L.eyes + '"/><circle cx="115" cy="79" r="5.2" fill="' + L.eyes + '"/><circle cx="85" cy="79" r="2.4" fill="#1b1b1f"/><circle cx="115" cy="79" r="2.4" fill="#1b1b1f"/>' +
-      '<circle cx="87" cy="76.5" r="1.4" fill="#fff"/><circle cx="117" cy="76.5" r="1.4" fill="#fff"/>' +
-      '<path d="M75 66 Q84 61 92 65" stroke="' + hcD + '" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M108 65 Q116 61 125 66" stroke="' + hcD + '" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path d="M93 98 Q100 104 107 98" stroke="#8A4A3A" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="76" cy="92" r="5" fill="#E58C8C" opacity=".25"/><circle cx="124" cy="92" r="5" fill="#E58C8C" opacity=".25"/>';
-    if (L.acc === 'glasses') s += '<circle cx="84" cy="78" r="12" fill="none" stroke="#2A2A30" stroke-width="2.4"/><circle cx="116" cy="78" r="12" fill="none" stroke="#2A2A30" stroke-width="2.4"/><path d="M96 78 h8" stroke="#2A2A30" stroke-width="2.4"/>';
-    /* hair in front */
-    var H = '';
-    if (L.hair === 'short' || L.hair === 'long') H = '<path d="M57 72 Q54 24 100 22 Q146 24 143 72 Q138 52 124 48 Q108 58 92 50 Q70 52 57 72 Z" fill="' + hc + '"/>';
-    else if (L.hair === 'spiky') H = '<path d="M57 70 L52 38 L70 50 L74 20 L90 44 L102 14 L112 44 L130 22 L132 48 L148 36 L143 70 Q130 52 100 52 Q70 52 57 70 Z" fill="' + hc + '"/>';
-    else if (L.hair === 'bun') H = '<circle cx="100" cy="16" r="14" fill="' + hc + '"/><path d="M57 72 Q54 26 100 24 Q146 26 143 72 Q136 50 100 48 Q64 50 57 72 Z" fill="' + hc + '"/>';
-    else if (L.hair === 'curly') H = [[64, 46], [82, 34], [104, 30], [124, 36], [140, 48], [56, 68], [146, 68], [100, 44]].map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="17" fill="' + hc + '"/>'; }).join('');
-    else H = '<path d="M60 70 Q60 32 100 32 Q140 32 140 70 Q130 54 100 54 Q70 54 60 70 Z" fill="' + hc + '"/>';
-    if (!T('helm') || L.hair === 'bun' || L.hair === 'curly') s += H; else s += '<g opacity=".95">' + H + '</g>';
-    if (L.acc === 'headband') s += '<rect x="58" y="46" width="84" height="9" rx="4" fill="#B5483C"/>';
-    /* gear worn on the head and chest */
-    if (T('helm')) s += glow('helm', '<path d="M56 70 Q52 18 100 16 Q148 18 144 70 L136 66 Q100 40 64 66 Z" fill="' + col('helm') + '" stroke="' + shade(col('helm'), -.4) + '" stroke-width="2.4"/><rect x="97" y="40" width="6" height="30" rx="2" fill="' + shade(col('helm'), -.15) + '"/>');
-    if (T('crown')) s += glow('crown', '<path d="M68 30 L74 4 L88 20 L100 0 L112 20 L126 4 L132 30 Z" fill="' + col('crown') + '" stroke="' + shade(col('crown'), -.4) + '" stroke-width="2"/><circle cx="100" cy="14" r="3.4" fill="#fff" opacity=".8"/>');
-    if (T('cloak')) s += '<circle cx="100" cy="126" r="6" fill="' + col('cloak') + '" stroke="' + shade(col('cloak'), -.5) + '" stroke-width="2"/>';
-    if (T('amulet')) s += glow('amulet', '<path d="M84 128 Q100 172 116 128" stroke="' + col('amulet') + '" stroke-width="2.6" fill="none"/><circle cx="100" cy="158" r="7.5" fill="' + col('amulet') + '" stroke="' + shade(col('amulet'), -.4) + '" stroke-width="2"/><circle cx="100" cy="158" r="3" fill="#fff" opacity=".7"/>');
-    if (T('satchel')) s += glow('satchel', '<path d="M138 128 L70 212" stroke="#5A3B24" stroke-width="6" stroke-linecap="round"/><rect x="124" y="196" width="36" height="32" rx="7" fill="' + col('satchel') + '" stroke="' + shade(col('satchel'), -.4) + '" stroke-width="2"/><rect x="124" y="204" width="36" height="6" fill="' + shade(col('satchel'), -.3) + '"/>');
-    if (T('tome')) s += glow('tome', '<rect x="18" y="196" width="32" height="38" rx="4" fill="' + col('tome') + '" stroke="' + shade(col('tome'), -.45) + '" stroke-width="2"/><rect x="22" y="200" width="3" height="30" fill="' + shade(col('tome'), -.4) + '"/><path d="M30 208 h14 M30 214 h14 M30 220 h10" stroke="#fff" stroke-width="1.6" opacity=".7"/>');
-    var h = o.h || 340, w = Math.round(h * 200 / 340);
-    return '<svg viewBox="-6 -4 212 334" style="height:' + h + (typeof h === 'number' ? 'px' : '') + ';width:auto" role="img" aria-label="Your hero" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+  /* ---------- image loading ---------- */
+  var IMG = {}, WAIT = {};
+  function loadImg(name) {
+    if (IMG[name]) return Promise.resolve(IMG[name]);
+    if (WAIT[name]) return WAIT[name];
+    WAIT[name] = new Promise(function (ok, no) {
+      var im = new Image(); im.onload = function () { IMG[name] = im; ok(im); }; im.onerror = function () { delete WAIT[name]; no(new Error('missing ' + name)); };
+      im.src = 'VELENTIS-av-' + name + '.webp';
+    });
+    return WAIT[name];
   }
-  V.avatar = { svg: svg, look: look, portrait: function () { return A.portrait || ''; }, setPortrait: function (p) { A.portrait = p; asave(); } };
+  function tinted(im, color, scale) {
+    var c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * scale); c.height = Math.round(im.naturalHeight * scale);
+    var x = c.getContext('2d'); x.drawImage(im, 0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = color; x.fillRect(0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'destination-in'; x.drawImage(im, 0, 0, c.width, c.height);
+    return c;
+  }
+  function maxTier() { var m = 0; SLOTS.forEach(function (s) { m = Math.max(m, tier(s[0])); }); return m; }
+  function spec(o) {
+    o = o || {};
+    var L = Object.assign({}, A, o.look || {}); var kit = KITS[L.body] || KITS.m;
+    var fit = L.match ? todaysFit() : null;
+    return { b: L.body in KITS ? L.body : 'm', skin: L.skin, hair: L.hair, face: kit.faces ? L.face : '', hc: L.hairColor, top: L.top, tc: (fit && fit.top) || L.topColor, bot: L.bot, bc: (fit && fit.bottom) || L.bottomColor,
+      aura: o.nogear ? 0 : maxTier(), res: o.res === 'hi' ? 1 : 0.5, ratio: kit.ratio };
+  }
+  function keyOf(s) { return [s.b, s.skin, s.hair, s.face, s.hc, s.top, s.tc, s.bot, s.bc, s.aura, s.res].join('|'); }
+  var DONE = {}, DONE_ORDER = [], BUSY = {};
+  function build(s, key) {
+    var kit = KITS[s.b], order = [];
+    var back = kit.backs[s.hair]; if (back) order.push([back, s.hc]);
+    order.push(['body', s.skin], [s.bot, s.bc]); if (s.face) order.push([s.face, s.skin]);
+    order.push([s.top, s.tc], [s.hair, s.hc]);
+    return Promise.all(order.map(function (o) { return loadImg(s.b + '-' + o[0]); })).then(function (ims) {
+      var body = ims[back ? 1 : 0], W = Math.round(body.naturalWidth * s.res), Hh = Math.round(body.naturalHeight * s.res);
+      var c = document.createElement('canvas'); c.width = W; c.height = Hh; var x = c.getContext('2d');
+      if (s.aura >= 2) {
+        var col = TIER_COL[s.aura], g = x.createRadialGradient(W / 2, Hh * 0.52, W * 0.05, W / 2, Hh * 0.52, Hh * 0.5);
+        g.addColorStop(0, col + (s.aura >= 3 ? '66' : '33')); g.addColorStop(1, col + '00'); x.fillStyle = g; x.fillRect(0, 0, W, Hh);
+      }
+      order.forEach(function (o, i) { x.drawImage(tinted(ims[i], o[1], s.res), 0, 0); });
+      var url = ''; try { url = c.toDataURL('image/webp', 0.9); if (url.indexOf('data:image/webp') !== 0) url = c.toDataURL('image/png'); } catch (e) { url = ''; }
+      return url;
+    });
+  }
+  function ensure(s) {
+    var key = keyOf(s); if (DONE[key] || BUSY[key]) return key;
+    BUSY[key] = build(s, key).then(function (url) {
+      delete BUSY[key]; if (!url) return;
+      DONE[key] = url; DONE_ORDER.push(key); while (DONE_ORDER.length > 14) delete DONE[DONE_ORDER.shift()];
+      var list = document.querySelectorAll('img[data-avk]');
+      for (var i = 0; i < list.length; i++) if (list[i].getAttribute('data-avk') === key) list[i].src = url;
+    }, function () { delete BUSY[key]; });
+    return key;
+  }
+  var BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  /* returns an <img> tag (kept name "svg" so other screens keep working); the picture fills in as soon as it is painted */
+  function svg(o) {
+    o = o || {}; var s = spec(o), key = ensure(s), h = o.h || 340;
+    return '<img class="avimg" data-avk="' + esc(key) + '" src="' + (DONE[key] || BLANK) + '" alt="Your hero" style="height:' + (typeof h === 'number' ? h + 'px' : h) + ';width:auto;aspect-ratio:' + s.ratio.toFixed(4) + '">';
+  }
+  V.avatar = { svg: svg, look: look, portrait: function () { return A.portrait || ''; }, setPortrait: function (p) { A.portrait = p; asave(); }, kits: KITS };
+  setTimeout(function () { try { ensure(spec({ res: 'hi' })); ensure(spec({})); } catch (e) {} }, 400);
 
   /* =============================================================
      EDITOR
@@ -139,20 +155,20 @@
     return '<label class="pick"><span>' + label + '</span><input type="color" data-av="' + k + '" value="' + (/^#[0-9a-f]{6}$/i.test(cur) ? cur : '#888888') + '" aria-label="' + label + '"></label>';
   }
   function renderAvatar() {
-    var body = '';
+    var kit = KITS[A.body], body = '';
     if (av.tab === 'body') {
-      body = '<div class="eyebrow">Skin</div>' + sw('skin', SKINS, A.skin) + picker('skin', A.skin, 'Custom skin') +
-        '<div class="eyebrow">Eyes</div>' + sw('eyes', EYES, A.eyes) + picker('eyes', A.eyes, 'Custom eyes') +
-        '<div class="eyebrow">Accessory</div>' + chips('acc', ACCS, A.acc) +
+      body = '<div class="eyebrow">Body</div>' + chips('body', [['f', 'Female'], ['m', 'Male']], A.body) +
+        (kit.faces ? '<div class="eyebrow">Expression</div>' + chips('face', kit.faces, A.face) : '') +
+        '<div class="eyebrow">Skin tone</div>' + sw('skin', SKINS, A.skin) + picker('skin', A.skin, 'Custom skin tone') +
         '<div class="eyebrow">Name</div><input class="field" id="avName" maxlength="24" value="' + esc(core.state().name || '') + '" placeholder="Your hero name" aria-label="Hero name" autocomplete="off">';
     } else if (av.tab === 'hair') {
-      body = '<div class="eyebrow">Style</div>' + chips('hair', HAIRS, A.hair) + '<div class="eyebrow">Colour</div>' + sw('hairColor', HAIRC, A.hairColor) + picker('hairColor', A.hairColor, 'Custom hair colour');
+      body = '<div class="eyebrow">Style</div>' + chips('hair', kit.hairs, A.hair) + '<div class="eyebrow">Colour</div>' + sw('hairColor', HAIRC, A.hairColor) + picker('hairColor', A.hairColor, 'Custom hair colour');
     } else if (av.tab === 'outfit') {
       var wd = V.wardrobe && V.wardrobe.count ? V.wardrobe.count() : 0, fit = todaysFit();
-      body = '<div class="eyebrow">Top</div>' + chips('top', TOPS, A.top) + '<div class="eyebrow">Top colour</div>' + sw('topColor', CLOTH, A.topColor) + picker('topColor', A.topColor, 'Custom top colour') +
-        '<div class="eyebrow">Bottom colour</div>' + sw('bottomColor', CLOTH, A.bottomColor) + picker('bottomColor', A.bottomColor, 'Custom bottom colour') +
+      body = '<div class="eyebrow">Top</div>' + chips('top', kit.tops, A.top) + '<div class="eyebrow">Top colour</div>' + sw('topColor', CLOTH, A.topColor) + picker('topColor', A.topColor, 'Custom top colour') +
+        '<div class="eyebrow">Bottom</div>' + chips('bot', kit.bots, A.bot) + '<div class="eyebrow">Bottom colour</div>' + sw('bottomColor', CLOTH, A.bottomColor) + picker('bottomColor', A.bottomColor, 'Custom bottom colour') +
         '<label class="chk"><input type="checkbox" id="avMatch"' + (A.match ? ' checked' : '') + '><span>Match my real outfit from the Wardrobe' + (fit ? ' (today: set)' : wd ? ' (pick today’s outfit first)' : ' (add clothes first)') + '</span></label>' +
-        '<p class="note">Gear you earn from levels and dungeons is drawn on top automatically.</p>';
+        '<p class="note">Gear you earn from levels and dungeons glows around your hero and fills your Inventory slots.</p>';
     } else {
       var g = av.gen;
       body = '<div class="eyebrow">Describe your hero</div><textarea class="field" id="avPrompt" maxlength="160" placeholder="e.g. silver-haired scout with a green cloak and a calm smile" aria-label="Portrait description">' + esc(g.prompt) + '</textarea>' +
@@ -164,7 +180,7 @@
     }
     var tabs = [['body', 'Body'], ['hair', 'Hair'], ['outfit', 'Outfit'], ['portrait', 'Portrait']];
     $('v-avatar').innerHTML = u.bar('data-act="go" data-to="inventory"', 'Your hero') +
-      '<div class="card pad avprev"><div class="avstage">' + svg({ h: 250 }) + '</div><div class="avinfo"><b>' + esc(core.state().name || 'Traveler') + '</b><span class="sub">Level ' + core.levelInfo(core.state().total).level + ' · ' + V.gear.owned() + ' of 8 gear slots filled</span>' +
+      '<div class="card pad avprev"><div class="avstage">' + svg({ h: 430, res: 'hi' }) + '</div><div class="avinfo"><b>' + esc(core.state().name || 'Traveler') + '</b><span class="sub">Level ' + core.levelInfo(core.state().total).level + ' · ' + V.gear.owned() + ' of 8 gear slots filled</span>' +
       (A.portrait ? '<img class="avpic" src="' + esc(A.portrait) + '" alt="">' : '') + '</div></div>' +
       '<div class="chips">' + tabs.map(function (t) { return '<button class="tag' + (av.tab === t[0] ? ' on' : '') + '" data-act="av-tab" data-id="' + t[0] + '" aria-pressed="' + (av.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div class="card pad avbody">' + body + '</div>' +
@@ -173,6 +189,7 @@
   V.registerView('avatar', renderAvatar);
 
   function rerender(keepScroll) { if (V.view() === 'avatar') { var y = window.scrollY; renderAvatar(); if (keepScroll) window.scrollTo(0, y); } }
+  function refreshStage() { var st = document.querySelector('#v-avatar .avstage'); if (st) st.innerHTML = svg({ h: 430, res: 'hi' }); }
 
   function hash(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h; }
   function generate() {
@@ -204,19 +221,24 @@
     var t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
     var a = t.getAttribute('data-act'); if (a.indexOf('av-') !== 0) return;
     if (a === 'av-tab') { av.tab = t.getAttribute('data-id'); rerender(); }
-    else if (a === 'av-set') { A[t.getAttribute('data-k')] = t.getAttribute('data-v'); asave(); rerender(true); }
+    else if (a === 'av-set') {
+      var k = t.getAttribute('data-k'), v = t.getAttribute('data-v');
+      if (k === 'body' && v !== A.body) { A.body = v; A.hair = ''; A.top = ''; A.bot = ''; A.face = ''; }
+      else A[k] = v;
+      asave(); rerender(true);
+    }
     else if (a === 'av-gen') generate();
     else if (a === 'av-use') usePortrait();
     else if (a === 'av-unuse') { A.portrait = ''; asave(); rerender(true); }
-    else if (a === 'av-reset') { var p = A.portrait; A = Object.assign({}, DEF, { portrait: p }); asave(); rerender(); }
+    else if (a === 'av-reset') { var p = A.portrait, b = A.body; A = Object.assign({}, DEF, { portrait: p, body: b }); asave(); rerender(); }
   });
   document.addEventListener('input', function (e) {
     var k = e.target.getAttribute && e.target.getAttribute('data-av');
-    if (k) { A[k] = e.target.value; asave(); var st = document.querySelector('#v-avatar .avstage'); if (st) st.innerHTML = svg({ h: 250 }); }
+    if (k) { A[k] = e.target.value; asave(); refreshStage(); }
     else if (e.target.id === 'avName') core.setName(e.target.value);
     else if (e.target.id === 'avPrompt') av.gen.prompt = e.target.value;
   });
   document.addEventListener('change', function (e) {
-    if (e.target.id === 'avMatch') { A.match = e.target.checked; asave(); var st = document.querySelector('#v-avatar .avstage'); if (st) st.innerHTML = svg({ h: 250 }); }
+    if (e.target.id === 'avMatch') { A.match = e.target.checked; asave(); refreshStage(); }
   });
 })();
