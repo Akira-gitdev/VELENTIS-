@@ -50,7 +50,7 @@
   var KITS = {
     f: { name: 'Female', ratio: 612 / 1292,
       tops: [['top1', 'Tee']], bots: [['bot1', 'Slim pants']],
-      hairs: [['h1', 'Bob'], ['h2', 'Ponytail'], ['h3', 'Messy crop'], ['h4', 'Side part'], ['h5', 'Braids'], ['h6', 'Long waves']], backs: { h6: 'h6b' } },
+      hairs: [['h1', 'Bob'], ['h2', 'Ponytail'], ['h3', 'Messy crop'], ['h4', 'Side part'], ['h5', 'Braids'], ['h6', 'Long waves'], ['h7', 'Long straight']], backs: {} },
     m: { name: 'Male', ratio: 412 / 1197,
       tops: [['top1', 'Tee']], bots: [['bot1', 'Long pants'], ['bot2', 'Shorts']],
       hairs: [['h1', 'Side fringe'], ['h2', 'Tufted'], ['h3', 'Swept'], ['h4', 'Messy crop'], ['h5', 'Layered long']],
@@ -104,32 +104,33 @@
       aura: o.nogear ? 0 : maxTier(), res: o.res === 'hi' ? 1 : 0.5, ratio: kit.ratio };
   }
   function keyOf(s) { return [s.b, s.skin, s.hair, s.face, s.hc, s.top, s.tc, s.bot, s.bc, s.aura, s.res].join('|'); }
-  var DONE = {}, DONE_ORDER = [], BUSY = {};
+  var DONE = {}, DONE_ORDER = [], BUSY = {}, MISSING = {}, FAILED = {};
   function build(s, key) {
     var kit = KITS[s.b], order = [];
     var back = kit.backs[s.hair]; if (back) order.push([back, s.hc]);
     order.push(['body', s.skin], [s.bot, s.bc]); if (s.face) order.push([s.face, s.skin]);
     order.push([s.top, s.tc], [s.hair, s.hc]);
-    return Promise.all(order.map(function (o) { return loadImg(s.b + '-' + o[0]); })).then(function (ims) {
-      var body = ims[back ? 1 : 0], W = Math.round(body.naturalWidth * s.res), Hh = Math.round(body.naturalHeight * s.res);
+    return Promise.all(order.map(function (o) { return loadImg(s.b + '-' + o[0]).then(function (im) { return im; }, function () { MISSING[s.b + '-' + o[0]] = 1; return null; }); })).then(function (ims) {
+      var body = ims[back ? 1 : 0]; if (!body) { MISSING.fatal = 1; throw new Error('no body'); }
+      var W = Math.round(body.naturalWidth * s.res), Hh = Math.round(body.naturalHeight * s.res);
       var c = document.createElement('canvas'); c.width = W; c.height = Hh; var x = c.getContext('2d');
       if (s.aura >= 2) {
         var col = TIER_COL[s.aura], g = x.createRadialGradient(W / 2, Hh * 0.52, W * 0.05, W / 2, Hh * 0.52, Hh * 0.5);
         g.addColorStop(0, col + (s.aura >= 3 ? '66' : '33')); g.addColorStop(1, col + '00'); x.fillStyle = g; x.fillRect(0, 0, W, Hh);
       }
-      order.forEach(function (o, i) { x.drawImage(tinted(ims[i], o[1], s.res), 0, 0); });
+      order.forEach(function (o, i) { if (ims[i]) x.drawImage(tinted(ims[i], o[1], s.res), 0, 0); });
       var url = ''; try { url = c.toDataURL('image/webp', 0.9); if (url.indexOf('data:image/webp') !== 0) url = c.toDataURL('image/png'); } catch (e) { url = ''; }
       return url;
     });
   }
   function ensure(s) {
-    var key = keyOf(s); if (DONE[key] || BUSY[key]) return key;
+    var key = keyOf(s); if (DONE[key] || BUSY[key] || FAILED[key]) return key;
     BUSY[key] = build(s, key).then(function (url) {
       delete BUSY[key]; if (!url) return;
       DONE[key] = url; DONE_ORDER.push(key); while (DONE_ORDER.length > 14) delete DONE[DONE_ORDER.shift()];
       var list = document.querySelectorAll('img[data-avk]');
       for (var i = 0; i < list.length; i++) if (list[i].getAttribute('data-avk') === key) list[i].src = url;
-    }, function () { delete BUSY[key]; });
+    }, function () { delete BUSY[key]; FAILED[key] = 1; setTimeout(function () { if (V.view && V.view() === 'avatar') renderAvatar(); }, 50); });
     return key;
   }
   var BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -156,6 +157,7 @@
   }
   function renderAvatar() {
     var kit = KITS[A.body], body = '';
+    var miss = Object.keys(MISSING).filter(function (k) { return k !== 'fatal'; }).map(function (k) { return 'VELENTIS-av-' + k + '.webp'; });
     if (av.tab === 'body') {
       body = '<div class="eyebrow">Body</div>' + chips('body', [['f', 'Female'], ['m', 'Male']], A.body) +
         (kit.faces ? '<div class="eyebrow">Expression</div>' + chips('face', kit.faces, A.face) : '') +
@@ -180,7 +182,7 @@
     }
     var tabs = [['body', 'Body'], ['hair', 'Hair'], ['outfit', 'Outfit'], ['portrait', 'Portrait']];
     $('v-avatar').innerHTML = u.bar('data-act="go" data-to="inventory"', 'Your hero') +
-      '<div class="card pad avprev"><div class="avstage">' + svg({ h: 430, res: 'hi' }) + '</div><div class="avinfo"><b>' + esc(core.state().name || 'Traveler') + '</b><span class="sub">Level ' + core.levelInfo(core.state().total).level + ' · ' + V.gear.owned() + ' of 8 gear slots filled</span>' +
+      (miss.length ? '<div class="err">These picture files did not load. Upload them to GitHub and rebuild: ' + esc(miss.join(', ')) + '</div>' : '') + '<div class="card pad avprev"><div class="avstage">' + svg({ h: 430, res: 'hi' }) + '</div><div class="avinfo"><b>' + esc(core.state().name || 'Traveler') + '</b><span class="sub">Level ' + core.levelInfo(core.state().total).level + ' · ' + V.gear.owned() + ' of 8 gear slots filled</span>' +
       (A.portrait ? '<img class="avpic" src="' + esc(A.portrait) + '" alt="">' : '') + '</div></div>' +
       '<div class="chips">' + tabs.map(function (t) { return '<button class="tag' + (av.tab === t[0] ? ' on' : '') + '" data-act="av-tab" data-id="' + t[0] + '" aria-pressed="' + (av.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div class="card pad avbody">' + body + '</div>' +
