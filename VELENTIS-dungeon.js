@@ -90,7 +90,8 @@
   function reward(A, bonus) {
     V.emit('dungeon.clear', { ref: A.id, units: A.rank + 1 });
     var drop = V.gear.drop(A.rank, bonus);
-    finish('clear', { xp: xpFor(A.rank), drop: drop ? { name: drop.name, tier: drop.tier } : null, bonus: !!bonus });
+    var fit = V.fit && V.fit.drop ? V.fit.drop(A.rank, bonus) : null;
+    finish('clear', { xp: xpFor(A.rank), drop: drop ? { name: drop.name, tier: drop.tier } : null, fit: fit ? fit.name : '', bonus: !!bonus });
   }
   function arrive() {
     var A = D.active; if (!A || ui.boss) return;
@@ -124,7 +125,7 @@
       var r = D.result, rk = r.rank;
       if (r.kind === 'clear') {
         h = head('Dungeon') + '<div class="card hero"><span class="chip">' + badge(rk, true) + '</span><h2>Gate cleared</h2><p>' + RANK_WORD[rk] + ' dungeon, rank ' + RANKS[rk] + '. You earned XP.</p>' +
-          (r.drop ? '<p style="margin-top:10px"><b style="color:' + V.gear.tierColor(r.drop.tier) + '">New gear: ' + esc(r.drop.name) + '</b><br><span class="sub">It is already on your hero.</span></p>' : '<p class="sub" style="margin-top:10px">No gear this time. Harder gates drop it more often.</p>') + '</div>' +
+          (r.fit ? '<p style="margin-top:10px"><b style="color:#F2C14E">New outfit: ' + esc(r.fit) + '</b><br><span class="sub">Find it under Your hero, then Sets.</span></p>' : '') + (r.drop ? '<p style="margin-top:10px"><b style="color:' + V.gear.tierColor(r.drop.tier) + '">New gear: ' + esc(r.drop.name) + '</b><br><span class="sub">It is already on your hero.</span></p>' : '<p class="sub" style="margin-top:10px">No gear this time. Harder gates drop it more often.</p>') + '</div>' +
           '<button class="btn2 main" data-act="dg-ok">Done</button><button class="btn2" data-act="go" data-to="inventory">See my hero</button>';
       } else {
         h = head('Dungeon') + '<div class="card hero"><span class="chip">' + ic('lock') + '</span><h2>The gate collapsed</h2><p>Time ran out. No penalty. Try a gentler one, or the same one when you are ready.</p></div><button class="btn2 main" data-act="dg-ok">Back</button>';

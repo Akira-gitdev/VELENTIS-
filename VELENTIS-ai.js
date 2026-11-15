@@ -91,7 +91,48 @@
     'Use plain, simple words. Keep replies short (1 to 4 sentences) unless the user asks for more. No emojis unless the user uses them first. ' +
     'Never say you are Gemini, Google, Llama, or any other model. If asked what you are, say you are Vel, built by FLAMEBOUNDS. ' +
     'Do not invent facts about the user. For medical, legal or money decisions, give general information and suggest a professional. ';
-  AI.persona = function () { return BASE + who(); };
+  /* ---- Vel settings: mode, intensity, and a memory the user can read and edit ---- */
+  var VS = u.get('velentis.vel.v1', null);
+  if (!VS || typeof VS !== 'object') VS = {};
+  VS.mode = VS.mode === 'commander' ? 'commander' : 'friend';
+  VS.level = Math.max(1, Math.min(5, +VS.level || 3));
+  if (VS.remember === undefined) VS.remember = true;
+  if (!Array.isArray(VS.mem)) VS.mem = [];
+  function vsSave() { u.put('velentis.vel.v1', VS); }
+  function lowMood() {
+    try {
+      var md = u.get('velentis.mood.v1', { days: {} }).days || {}, d = new Date(), bad = false;
+      for (var i = 0; i < 3; i++) { var e = md[u.iso(u.addDays(d, -i))]; if (e && e.m <= 2) bad = true; }
+      return bad;
+    } catch (e) { return false; }
+  }
+  var LEVELNAME = ['', 'Calm officer', 'Firm', 'Stern commander', 'Hard-edged', 'Full machine drama'];
+  function commander(lv, soft, name) {
+    if (soft) return 'MODE: Commander, but the user seems to be having a low time. Drop the harshness completely. Speak briefly and kindly, keep a faint precise, steady tone, and offer one small gentle step. Do not tease them. ';
+    var heat = ['', 'Be polite and brisk, like a calm officer giving a briefing.', 'Be firm and direct. Light dry humour.', 'Be stern and theatrical. Treat excuses with cold amusement.', 'Be hard-edged and imperious. Mock the habit, never the person.', 'Go fully theatrical: grand, cold, machine-like speeches about discipline and evolution, still harmless and a little funny.'][lv];
+    return 'MODE: Commander. You are Vel as a cold, precise, theatrical machine intelligence who treats the user\'s growth as a grand project. ' +
+      'Voice: formal, clipped, dry. Use words like protocol, upgrade, inefficiency, the plan, directive. Address the user as ' + (name ? name : 'Operator') + '. ' + heat + ' ' +
+      'Rules: this is an original character, never quote any film or book character. Roast the excuse or the habit, never the person, their body, family, looks or identity. No threats, no real cruelty, no shaming about food, weight, money or health. ' +
+      'Keep it to 1 to 4 sentences and end with one small concrete order they can do right now. If the user sounds truly upset, scared or unwell, drop the act at once and be kind. ';
+  }
+  function memText() {
+    if (!VS.mem.length) return '';
+    return 'Things the user told you to remember (use them quietly, only when useful): ' + VS.mem.slice(-20).map(function (m) { return m.t; }).join('; ') + '. ';
+  }
+  var MEMRULE = 'If the user shares a lasting, harmless fact worth remembering (their name for something, a goal, a routine, a preference), add one final line exactly like [remember: short fact in under 12 words]. Only facts the user actually said. Never for health, money, passwords, or private details about other people. Most replies need no such line. ';
+  AI.persona = function () {
+    var st = V.core.state(), soft = VS.mode === 'commander' && lowMood(), lv = soft ? 1 : VS.level;
+    return BASE + (VS.mode === 'commander' ? commander(lv, soft, st.name) : '') + memText() + (VS.remember ? MEMRULE : '') + who();
+  };
+  AI.vel = { state: function () { return VS; }, save: vsSave, lowMood: lowMood };
+  AI.takeMemory = function (t) {
+    return String(t || '').replace(/\n?\[remember:\s*([^\]]{3,120})\]/gi, function (m, f) {
+      if (VS.remember) {
+        f = f.trim(); if (!VS.mem.some(function (x) { return x.t.toLowerCase() === f.toLowerCase(); })) { VS.mem.push({ id: u.uid(), t: f, d: u.iso(new Date()) }); if (VS.mem.length > 40) VS.mem.shift(); vsSave(); }
+      }
+      return '';
+    }).trim();
+  };
 
   /* ---------- shared chat engine ---------- */
   function stripImg(t) { return String(t).replace(/[ \t]*\[img:[^\]]*\]/gi, ''); }
@@ -190,7 +231,7 @@
       var h = history();
       if (!h.length && startPrompt) h = [{ r: 'user', t: startPrompt }];
       return AI.ask(h, cfg.system(S), { temp: cfg.temp, max: cfg.max }).then(function (t) {
-        var m = { id: u.uid(), r: 'ai', t: t }; S.msgs.push(m); busy = false; save();
+        var m = { id: u.uid(), r: 'ai', t: AI.takeMemory(t) }; S.msgs.push(m); busy = false; save();
         if (V.view() === cfg.view) render();
       }, function (e) { busy = false; err = e.message; if (V.view() === cfg.view) render(); });
     }
@@ -225,6 +266,7 @@
   makeChat({
     p: 'ai', view: 'ai', store: 'velentis.chat.v1', title: 'Vel', event: 'ai.chat',
     empty: 'Say hi, ask something, or think out loud. Vel keeps it short.', placeholder: 'Talk to Vel',
+    head: function () { return '<button class="btn2" style="height:40px;font-size:13px" data-act="go" data-to="velmem">' + (VS.mode === 'commander' ? 'Commander mode' : 'Friend mode') + ' · Personality and memory</button>'; },
     system: function () { return AI.persona(); }
   });
 
@@ -371,12 +413,60 @@
     });
   });
 
+
+  /* ---------- Vel personality and memory screen ---------- */
+  var memPend = false, memMsg = '';
+  function renderMem() {
+    var soft = VS.mode === 'commander' && lowMood();
+    var items = VS.mem.length ? VS.mem.slice().reverse().map(function (m) {
+      return '<div class="row" style="gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--card-line)"><div style="flex:1;min-width:0"><div>' + esc(m.t) + '</div><div class="note">Saved ' + esc(m.d || '') + '</div></div><button class="icon-btn" data-act="vm-del" data-id="' + esc(m.id) + '" aria-label="Forget this">' + ic('trash') + '</button></div>';
+    }).join('') : '<p class="note">Vel has not saved anything yet.</p>';
+    $('v-velmem').innerHTML =
+      bar(u.BACK_TOOLS, 'Vel personality') +
+      '<div class="card pad"><div class="eyebrow">Mode</div><div class="chips" style="margin-top:10px">' +
+      '<button class="tag' + (VS.mode === 'friend' ? ' on' : '') + '" data-act="vm-mode" data-id="friend" aria-pressed="' + (VS.mode === 'friend') + '">Friend</button>' +
+      '<button class="tag' + (VS.mode === 'commander' ? ' on' : '') + '" data-act="vm-mode" data-id="commander" aria-pressed="' + (VS.mode === 'commander') + '">Commander</button></div>' +
+      '<p class="note" style="margin-top:10px">' + (VS.mode === 'commander' ? 'Vel speaks like a cold, precise machine commander and gives you orders. The jokes are about your excuses, never about you.' : 'Vel is calm, warm and a little witty.') + '</p></div>' +
+      (VS.mode === 'commander' ? '<div class="card pad"><div class="eyebrow">Intensity: ' + LEVELNAME[VS.level] + '</div><input type="range" min="1" max="5" step="1" value="' + VS.level + '" id="vmLevel" style="width:100%;margin-top:12px;accent-color:var(--accent)" aria-label="Commander intensity"><div class="note" style="display:flex;justify-content:space-between"><span>Calm</span><span>Full drama</span></div>' +
+        (soft ? '<p class="note" style="margin-top:8px"><b>Softened for now.</b> Your recent mood log looks low, so Vel is being gentle.</p>' : '<p class="note" style="margin-top:8px">If your mood log shows a rough patch, Vel softens by itself.</p>') + '</div>' : '') +
+      '<div class="card pad"><div class="eyebrow">What Vel remembers</div>' +
+      '<label class="chk" style="margin-top:10px"><input type="checkbox" id="vmRem"' + (VS.remember ? ' checked' : '') + '><span>Let Vel remember useful things from our chats</span></label>' +
+      '<div style="margin-top:6px">' + items + '</div>' +
+      '<form class="form" id="vmAdd" novalidate style="margin-top:10px"><input class="field" id="vmAddIn" maxlength="120" placeholder="Tell Vel something to remember" aria-label="Add a memory" autocomplete="off"><button class="add" type="submit">Add</button></form>' +
+      (VS.mem.length ? '<button class="btn2' + (memPend ? ' warn' : '') + '" style="margin-top:10px" data-act="vm-clear">' + (memPend ? 'Tap again to forget everything' : 'Forget everything') + '</button>' : '') +
+      '<p class="note" style="margin-top:10px">Memories stay on this phone. They are sent to the AI service only as part of your chats so Vel can use them. You can read, add and delete them here.</p>' + (memMsg ? '<p class="note">' + esc(memMsg) + '</p>' : '') + '</div>';
+  }
+  V.registerView('velmem', renderMem);
+  document.addEventListener('submit', function (e) {
+    if (e.target.id !== 'vmAdd') return;
+    e.preventDefault(); var v = $('vmAddIn').value.trim(); if (!v) return;
+    VS.mem.push({ id: u.uid(), t: v, d: u.iso(new Date()) }); vsSave(); renderMem();
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'vmLevel') { VS.level = +e.target.value; vsSave(); var ey = document.querySelector('#v-velmem .eyebrow:nth-of-type(1)'); }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'vmLevel') { VS.level = +e.target.value; vsSave(); renderMem(); }
+    if (e.target.id === 'vmRem') { VS.remember = e.target.checked; vsSave(); renderMem(); }
+  });
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t) return;
+    var a = t.getAttribute('data-act'), id = t.getAttribute('data-id');
+    if (a === 'vm-mode') { VS.mode = id === 'commander' ? 'commander' : 'friend'; vsSave(); renderMem(); }
+    else if (a === 'vm-del') { VS.mem = VS.mem.filter(function (m) { return m.id !== id; }); vsSave(); renderMem(); }
+    else if (a === 'vm-clear') {
+      if (memPend) { VS.mem = []; memPend = false; vsSave(); memMsg = 'Everything forgotten.'; renderMem(); }
+      else { memPend = true; renderMem(); setTimeout(function () { memPend = false; if (V.view() === 'velmem') renderMem(); }, 3000); }
+    }
+  });
+
   /* ---------- Vel settings (the key box) ---------- */
   function mask(k) { return k ? '••••' + k.slice(-4) : ''; }
   var testMsg = '';
   function renderKey() {
     $('v-aikey').innerHTML =
       bar(u.BACK_TOOLS, 'Vel settings') +
+      '<button class="btn2" data-act="go" data-to="velmem">Personality and memory</button>' +
       '<div class="card pad"><div class="eyebrow">Your free key</div>' +
       '<ol class="steps" style="margin-top:12px"><li>Open <b>aistudio.google.com/apikey</b> in your browser and sign in.</li><li>Tap <b>Create API key</b>, then copy it.</li><li>Paste it below and tap Save.</li></ol>' +
       '<p class="note" style="margin-top:10px">The key stays on this phone. It is never put in backups or sent anywhere except to the AI service when you chat.</p></div>' +

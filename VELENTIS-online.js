@@ -142,6 +142,7 @@
       (ui.msg ? '<div class="err">' + esc(ui.msg) + '</div>' : '') +
       '<button class="link" data-act="on-out">Log out</button>';
   }
+  V.online = { ready: ready, session: function () { return sess; }, req: req, plain: plain, stats: publicStats };
   V.registerTool('online', render);
 
   /* ---------- friends ---------- */

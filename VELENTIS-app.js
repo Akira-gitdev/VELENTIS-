@@ -31,6 +31,9 @@
     { k: 'run', n: 'Run tracker', d: 'GPS distance, time and pace', i: 'route' },
     { k: 'online', n: 'Account and sync', d: 'Log in, back up, use two phones', i: 'cloud' },
     { k: 'friends', n: 'Friends', d: 'Add friends and compare', i: 'users' },
+    { k: 'chats', n: 'Chats', d: 'Message your friends', i: 'mail' },
+    { k: 'guilds', n: 'Guilds', d: 'Small groups that cheer each other on', i: 'shield' },
+    { k: 'invites', n: 'Invites', d: 'Guild and friend invitations', i: 'bell' },
     { k: 'board', n: 'Leaderboards', d: 'Weekly XP, distance, explorers', i: 'trophy' },
     { k: 'watch', n: 'Watchlist', d: 'Anime, songs, and books', i: 'play' },
     { k: 'write', n: 'Story and poem helper', d: 'Get unstuck and write', i: 'pen' },
@@ -67,9 +70,10 @@
     if (current !== name) V.emit('view.leave', current);
     current = name;
     V.views[name]();
+    var cv = $('v-' + name); document.body.setAttribute('data-sec', cv && cv.classList.contains('realm') ? 'realm' : 'tool');
     Object.keys(V.views).forEach(function (v) { var el = $('v-' + v); if (el) el.hidden = v !== name; });
     var NAVOF = { home: 'home', inventory: 'inventory', me: 'inventory', stats: 'inventory', look: 'inventory', world: 'world', run: 'world', reps: 'world', move: 'world',
-      messages: 'messages', online: 'messages', friends: 'messages', board: 'messages' };
+      messages: 'messages', online: 'messages', friends: 'messages', board: 'messages', chats: 'messages', chat: 'messages', guilds: 'messages', guild: 'messages', invites: 'messages' };
     var on = NAVOF[name] || 'workshop';
     ['home', 'inventory', 'world', 'workshop', 'messages'].forEach(function (k) {
       var b = $('n-' + k); if (!b) return;
@@ -177,7 +181,7 @@
   function rowTool(t) {
     return '<button class="card row btn" data-act="open" data-k="' + t.k + '"><span class="chip">' + ic(t.i) + '</span>' +
       '<span class="txt"><span class="nm">' + esc(t.n) + '</span><br><span class="sub">' + esc(t.d) + '</span></span>' +
-      (t.built ? ic('chev') : '<span class="pill">Soon</span>') + '</button>';
+      (t.built ? ic('chev') : '<span class="pill">Missing file</span>') + '</button>';
   }
   var GROUPS = [
     ['Companion', ['ai', 'lang', 'story', 'write']],
@@ -199,12 +203,13 @@
     $('v-tools').innerHTML = '<div class="topbar"><button class="icon-btn" data-act="go" data-to="home" aria-label="Back">' + ic('back') + '</button><h1>All tools</h1></div>' + html;
   }
 
+  var FILEOF = { ai: 'ai', lang: 'ai', story: 'ai', write: 'ai', chef: 'life', spend: 'life', notes: 'life', count: 'life', watch: 'life', voice: 'life', habits: 'habits', cards: 'mind', plan: 'self', focus: 'self', mood: 'self', quiz: 'learn', facts: 'learn', lib: 'learn', gent: 'learn', skills: 'learn', move: 'fit', reps: 'move', run: 'run', online: 'online', friends: 'online', board: 'online', chats: 'social', guilds: 'social', invites: 'social', dungeon: 'dungeon', wardrobe: 'wardrobe' };
   function renderSoon() {
     var t = stub && toolByKey(stub);
     if (!t) { go('home'); return; }
     $('v-soon').innerHTML =
       '<div class="topbar"><button class="icon-btn" data-act="go" data-to="tools" aria-label="Back">' + ic('back') + '</button><h1>' + esc(t.n) + '</h1></div>' +
-      '<div class="card hero"><span class="chip">' + ic(t.i) + '</span><h2>Coming soon</h2><p>' + esc(t.d) + '. We will build this one in a later step.</p></div>';
+      '<div class="card hero"><span class="chip">' + ic(t.i) + '</span><h2>This tool did not load</h2><p>' + esc(t.d) + '. Its file is missing from your app. Upload <b>VELENTIS-' + (FILEOF[t.k] || t.k) + '.js</b> to GitHub, rebuild, and install again.</p></div>';
   }
 
   /* ---------- me: profile, progress, badges, your data ---------- */

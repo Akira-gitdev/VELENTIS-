@@ -173,3 +173,31 @@
 .cl .icon-btn { position: absolute; top: 6px; right: 6px; }
 .wdform { display: flex; flex-direction: column; gap: 4px; }
 .avimg { display: block; max-width: 100%; object-fit: contain; }
+
+/* ---------- tool screens: carved wood table with parchment cards ---------- */
+body[data-sec="tool"] { background: #2b1a0e; }
+body[data-sec="tool"] .orbs { opacity: 0; }
+body[data-sec="tool"]::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,190,110,.16), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,0,0,.55), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.0) 0 22px, rgba(0,0,0,.28) 22px 24px, rgba(255,210,150,.05) 24px 26px),
+    repeating-linear-gradient(0deg, rgba(255,200,140,.045) 0 3px, rgba(0,0,0,.05) 3px 7px),
+    linear-gradient(90deg, #4a2f1b, #5a3a22 30%, #44291a 55%, #583820 80%, #3f2616); }
+body[data-sec="tool"] main.app { position: relative; z-index: 1; }
+body[data-sec="tool"] .view:not(.realm) { color: #F6EAD8; --muted: rgba(246,234,216,.7); }
+body[data-sec="tool"] .view:not(.realm) .topbar h1 { font-family: var(--serif); color: #FFF0D4; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+body[data-sec="tool"] .view:not(.realm) .icon-btn { color: #FFF0D4; background: rgba(32,21,14,.55); border: 1px solid rgba(243,201,138,.5); border-radius: 50%; }
+body[data-sec="tool"] .view:not(.realm) .card,
+body[data-sec="tool"] .view:not(.realm) .cl {
+  --fg: #3A2814; --muted: #7A6040; --card-line: rgba(120,84,40,.45); --field: rgba(255,248,226,.7); --track: rgba(120,84,40,.22);
+  --accent: #8A4B14; --on-accent: #FFF4DC; --shadow: none; --inset: inset 0 1px 3px rgba(120,84,40,.25);
+  color: #3A2814;
+  background: radial-gradient(ellipse at 20% 10%, rgba(255,255,240,.55), transparent 55%), linear-gradient(160deg, #F4E7C6, #E6D0A2 70%, #DCC28E);
+  border: 1px solid #8B6B3E; box-shadow: 0 6px 14px rgba(0,0,0,.5), inset 0 0 26px rgba(130,90,35,.25); backdrop-filter: none; -webkit-backdrop-filter: none; }
+body[data-sec="tool"] .view:not(.realm) .card h1, body[data-sec="tool"] .view:not(.realm) .card h2, body[data-sec="tool"] .view:not(.realm) .card h3 { font-family: var(--serif); color: #2E1D0C; }
+body[data-sec="tool"] .view:not(.realm) .btn2 { background: rgba(255,248,226,.6); color: #3A2814; border-color: #8B6B3E; }
+body[data-sec="tool"] .view:not(.realm) .btn2.main, body[data-sec="tool"] .view:not(.realm) .add { background: linear-gradient(#B8702A, #8A4B14); color: #FFF4DC; border: 1px solid #5B300D; }
+body[data-sec="tool"] .view:not(.realm) .eyebrow { color: #8A4B14; }
+body[data-sec="tool"] .view:not(.realm) > .note, body[data-sec="tool"] .view:not(.realm) > p { color: rgba(246,234,216,.85); }
+body[data-sec="tool"] .stage { opacity: 0; }

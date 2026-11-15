@@ -35,7 +35,7 @@
      HOME
      ============================================================= */
   function spot(x, y, icon, label, to) {
-    return '<button class="rm-spot" style="left:' + pct(x, W) + ';top:' + pct(y, H) + '" ' + (to === 'world' ? 'data-act="go" data-to="world"' : 'data-act="open" data-k="' + to + '"') + ' aria-label="' + esc(label) + '"><b>' + ic(icon) + '</b><span>' + esc(label) + '</span></button>';
+    return '<button class="rm-spot" style="left:' + pct(x, W) + ';top:' + pct(y, H) + '" ' + ((to === 'world' || to === 'quests') ? 'data-act="go" data-to="' + to + '"' : 'data-act="open" data-k="' + to + '"') + ' aria-label="' + esc(label) + '"><b>' + ic(icon) + '</b><span>' + esc(label) + '</span></button>';
   }
   function renderHome() {
     var f = facts(), li = f.li, qs = core.quests(), wk = core.week();
@@ -57,7 +57,8 @@
       (next && next.text ? '<div class="rm-small rm-muted" style="margin-top:auto;padding-top:calc(var(--u)*1.2)">Next step: ' + esc(next.text) + '</div>' : '');
     put('home', 'home',
       at('rm-card rm-in', [34, 36, 907, 226], top) +
-      spot(270, 770, 'map', 'World', 'world') + spot(695, 690, 'book', 'Library', 'lib') + spot(610, 975, 'list', 'Planner', 'plan') + spot(860, 940, 'check', 'Habits', 'habits') +
+      spot(270, 700, 'map', 'World', 'world') + spot(695, 640, 'book', 'Library', 'lib') + spot(385, 1110, 'list', 'Planner', 'plan') + spot(860, 940, 'check', 'Habits', 'habits') +
+      spot(215, 940, 'spark', 'Vel', 'ai') + spot(556, 300, 'calendar', 'Countdown', 'count') + spot(700, 835, 'trophy', 'Quest board', 'quests') + spot(610, 1000, 'notes', 'Notes', 'notes') +
       at('rm-card rm-in', [34, 1210, 907, 1620], qcard),
       'Home');
   }
@@ -240,11 +241,15 @@
       body = s ? para('Signed in as <b>' + esc(s.username) + '</b>. Add friends by username and see how you compare.') + pbtn('Open friends', 'friends', true) + pbtn('Leaderboards', 'board')
         : para('Log in to add friends and compete on the leaderboards. Your data stays yours: only your level, XP and weekly distance are shared.') + pbtn('Log in or sign up', 'online', true);
     } else if (ms.tab === 'chats') {
-      body = para('<b>Coming soon.</b> Private chats with friends need a bit more online setup.') + para('For now, add friends and compare progress. Chats are next on the list.') + (s ? pbtn('Open friends', 'friends') : pbtn('Log in first', 'online'));
+      var un = V.social ? V.social.unread() : 0;
+      body = s ? para('Private chats with your friends.' + (un ? ' You have <b>' + un + ' new</b>.' : '')) + pbtn('Open chats', 'chats', true) + pbtn('Open friends', 'friends')
+        : para('Log in to message your friends.') + pbtn('Log in or sign up', 'online', true);
     } else if (ms.tab === 'guilds') {
-      body = para('<b>Coming soon.</b> Guilds will be small groups with a shared goal, like a weekly distance everyone adds to.') + para('Guilds need accounts and a few new tables online, so they come after chats.');
+      body = s ? para('Guilds are small groups that cheer each other on. See their combined XP this week, chat, and invite friends.') + pbtn('Open guilds', 'guilds', true)
+        : para('Log in to start or join a guild.') + pbtn('Log in or sign up', 'online', true);
     } else if (ms.tab === 'invites') {
-      body = para('<b>Coming soon.</b> Guild and friend invitations will land here.') + para('Friend requests already work from the Friends page.') + pbtn('Open friends', 'friends');
+      body = s ? para('Guild invitations and friend requests wait here.') + pbtn('Open invites', 'invites', true)
+        : para('Log in to see your invitations.') + pbtn('Log in or sign up', 'online', true);
     } else {
       var rec = core.recent(6);
       body = '<div class="rm-muted" style="margin-bottom:calc(var(--u)*.6)">Your latest activity</div>' + (rec.length ? rec.map(function (e) { return '<div class="rm-row" style="padding:calc(var(--u)*.8) 0;border-bottom:1px solid rgba(59,42,28,.18)"><span class="rm-txt">' + esc(e.n) + '</span><b style="flex:none;color:#8A5424">+' + e.xp + ' XP</b></div>'; }).join('') : para('Nothing yet. Finish a quest and it shows up here.'));
@@ -256,6 +261,28 @@
     h += at('rm-in rm-ink', [404, 1218, 902, 1410], '<div class="rm-small" style="color:rgba(59,42,28,.8)">' + (s ? 'Signed in as <b>' + esc(s.username) + '</b>. Your progress can back up online.' : 'Not signed in. Everything is saved on this phone.') + '</div>' + pbtn(s ? 'Account and sync' : 'Log in or sign up', 'online', !s), 'gap:calc(var(--u)*1.6);justify-content:center');
     put('messages', 'messages', h, 'Messages');
   }
+
+  /* =============================================================
+     QUEST BOARD (the corkboard in the living room)
+     ============================================================= */
+  function renderQuests() {
+    var f = facts(), qs = core.quests(), wk = core.week(), li = f.li;
+    var ach = core.achievements().filter(function (a) { return !a.on; }).slice(0, 4);
+    var names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    var days = wk.days.map(function (on, i) { return '<span style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;border:2px solid #8A4B14;' + (on ? 'background:#8A4B14;color:#FFF4DC' : 'color:#8A4B14') + '">' + names[i] + '</span>'; }).join('');
+    var rows = qs.map(function (q) {
+      return '<div class="card row" style="align-items:center;gap:12px"><span class="chip">' + u.ic(q.done ? 'tick' : 'trophy') + '</span><div style="flex:1;min-width:0"><div style="font-weight:700;' + (q.done ? 'text-decoration:line-through;opacity:.65' : '') + '">' + esc(q.text) + '</div><div class="note">' + (q.done ? 'Done' : q.have + ' of ' + q.need) + ' · +' + q.bonus + ' XP</div></div>' +
+        (q.tool && !q.done ? '<button class="add" style="height:40px;padding:0 14px" data-act="open" data-k="' + esc(q.tool) + '">Go</button>' : '') + '</div>';
+    }).join('');
+    var next = ach.map(function (a) { return '<div class="row" style="gap:10px;padding:6px 0"><span class="chip">' + u.ic('award') + '</span><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(a.name || '') + '</div><div class="note">' + esc(a.text || '') + '</div></div></div>'; }).join('');
+    $('v-quests').innerHTML =
+      '<div class="topbar"><button class="icon-btn" data-act="go" data-to="home" aria-label="Back">' + u.ic('back') + '</button><h1>Quest board</h1></div>' +
+      '<div class="card pad"><div class="eyebrow">Level ' + li.level + '</div><div style="font-family:var(--serif);font-weight:700;font-size:20px;margin:4px 0 8px">' + esc(f.name) + '</div><div class="rm-bar" style="height:10px"><i style="width:' + li.pct + '%"></i></div><div class="note" style="margin-top:6px">' + li.into + ' of ' + li.need + ' XP to the next level</div></div>' +
+      '<div class="eyebrow" style="padding:0 4px">Today</div>' + rows +
+      '<div class="card pad"><div class="eyebrow">This week</div><div style="display:flex;justify-content:space-between;margin:10px 0 8px">' + days + '</div><div class="note">Be active on ' + wk.goal + ' different days. ' + wk.active + ' so far.</div></div>' +
+      (next ? '<div class="card pad"><div class="eyebrow">Next badges</div>' + next + '</div>' : '');
+  }
+  V.registerView('quests', renderQuests);
 
   /* ---------- views, backdrops, taps ---------- */
   V.registerView('home', renderHome);
