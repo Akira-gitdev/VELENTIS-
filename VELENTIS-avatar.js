@@ -51,11 +51,7 @@
     f: { name: 'Female', ratio: 612 / 1292,
       tops: [['top1', 'Tee']], bots: [['bot1', 'Slim pants']],
       hairs: [['h1', 'Bob'], ['h2', 'Ponytail'], ['h3', 'Messy crop'], ['h4', 'Side part'], ['h5', 'Braids'], ['h6', 'Long waves'], ['h7', 'Long straight']], backs: {},
-      face: '', eyeL: [298, 173], eyeR: [348, 177], eyeRot: 4.6, eyeSc: 0.17, mouth: [320, 217], mouthRot: 0, mouthSc: 0.27 },
-    m: { name: 'Male', ratio: 412 / 1197,
-      tops: [['top1', 'Tee'], ['top2', 'Long sleeve']], bots: [['bot1', 'Long pants'], ['bot2', 'Shorts']],
-      hairs: [['h1', 'Side fringe'], ['h2', 'Tufted'], ['h3', 'Swept'], ['h4', 'Messy crop'], ['h5', 'Layered long']],
-      backs: {}, face: 'face', eyeL: [102, 115], eyeR: [155, 101], eyeRot: -14.8, eyeSc: 0.19, mouth: [137, 147], mouthRot: -14, mouthSc: 0.27 }
+      face: '', eyeL: [298, 173], eyeR: [348, 177], eyeRot: 4.6, eyeSc: 0.17, mouth: [320, 217], mouthRot: 0, mouthSc: 0.27 }
   };
   /* new painted eyes (5 styles x 5 colours) and mouths (30), cut from two sheets. [x, y, w, h] inside each sheet */
   var EYE_SL = [[0, 0, 231, 89], [235, 0, 253, 89], [492, 0, 251, 89], [747, 0, 248, 89], [999, 0, 246, 89], [0, 93, 258, 95], [262, 93, 259, 95], [525, 93, 259, 94], [788, 93, 259, 95], [1051, 93, 247, 95], [0, 192, 223, 99], [227, 192, 224, 100], [455, 192, 224, 99], [683, 192, 225, 99], [912, 192, 224, 98], [1140, 192, 228, 102], [0, 298, 232, 106], [236, 298, 233, 110], [473, 298, 236, 105], [713, 298, 241, 109], [958, 298, 261, 100], [0, 412, 254, 96], [258, 412, 266, 95], [528, 412, 263, 99], [795, 412, 252, 97]];
@@ -63,11 +59,11 @@
   var EYE_COLS = ['Ash', 'Violet', 'Sky', 'Blood', 'Ember'];
   var EXPR = [['f0', 'Calm', 3, 0, 0], ['f1', 'Smirk', 0, 1, 24], ['f2', 'Blank', 3, 0, 16], ['f3', 'Angry', 1, 3, 21], ['f4', 'Shy', 2, 2, 10]];
   var MOUTH_N = 30;
-  var DEF = { body: 'm', skin: '#E8B58E', hair: 'h1', face: 'f0', eye: 3, eyec: 0, mouth: 0, hairColor: '#3B2A20', top: 'top1', topColor: '#5B7BA6', bot: 'bot1', bottomColor: '#3C3C42', match: false, portrait: '' };
+  var DEF = { body: 'f', skin: '#E8B58E', hair: 'h1', face: 'f0', eye: 3, eyec: 0, mouth: 0, hairColor: '#3B2A20', top: 'top1', topColor: '#5B7BA6', bot: 'bot1', bottomColor: '#3C3C42', match: false, portrait: '' };
   var A = u.get(AK, null);
   A = Object.assign({}, DEF, A && typeof A === 'object' ? A : {});
   function fix() {
-    var k = KITS[A.body] || KITS.m; if (!KITS[A.body]) A.body = 'm';
+    var k = KITS[A.body] || KITS.f; if (!KITS[A.body]) A.body = 'f';
     function has(list, id) { return list.some(function (x) { return x[0] === id; }); }
     if (!has(k.hairs, A.hair)) A.hair = k.hairs[0][0];
     if (!has(k.tops, A.top)) A.top = k.tops[0][0];
@@ -106,9 +102,9 @@
   function maxTier() { var m = 0; SLOTS.forEach(function (s) { m = Math.max(m, tier(s[0])); }); return m; }
   function spec(o) {
     o = o || {};
-    var L = Object.assign({}, A, o.look || {}); var kit = KITS[L.body] || KITS.m;
+    var L = Object.assign({}, A, o.look || {}); var kit = KITS[L.body] || KITS.f;
     var fit = L.match ? todaysFit() : null;
-    return { b: L.body in KITS ? L.body : 'm', skin: L.skin, hair: L.hair, face: kit.face, eye: L.eye | 0, eyec: L.eyec | 0, mouth: L.mouth | 0, hc: L.hairColor, top: L.top, tc: (fit && fit.top) || L.topColor, bot: L.bot, bc: (fit && fit.bottom) || L.bottomColor,
+    return { b: L.body in KITS ? L.body : 'f', skin: L.skin, hair: L.hair, face: kit.face, eye: L.eye | 0, eyec: L.eyec | 0, mouth: L.mouth | 0, hc: L.hairColor, top: L.top, tc: (fit && fit.top) || L.topColor, bot: L.bot, bc: (fit && fit.bottom) || L.bottomColor,
       aura: o.nogear ? 0 : maxTier(), res: o.res === 'hi' ? 1 : 0.5, ratio: kit.ratio };
   }
   function keyOf(s) { return [s.b, s.skin, s.hair, s.face, s.eye, s.eyec, s.mouth, s.hc, s.top, s.tc, s.bot, s.bc, s.aura, s.res].join('|'); }
@@ -192,7 +188,11 @@
     F.miss = 0; var id = pool[Math.floor(Math.random() * pool.length)];
     return addFit(id, false);
   }
-  V.fit = { list: FITS, own: function (id) { return !!F.own[id]; }, on: function () { return F.on; }, gift: function () { return addFit('knit', false); }, drop: fitDrop, check: checkLevel };
+  var TRADABLE = ['gate', 'raid'];
+  function removeFit(id) { if (!F.own[id]) return false; delete F.own[id]; if (F.on === id) F.on = ''; fsave(); return true; }
+  V.fit = { list: FITS, own: function (id) { return !!F.own[id]; }, on: function () { return F.on; }, gift: function () { return addFit('knit', !F.on); }, drop: fitDrop, check: checkLevel,
+    add: function (id, wear) { return addFit(id, !!wear); }, remove: removeFit, tradable: function (id) { return TRADABLE.indexOf(id) !== -1; },
+    mine: function () { return FITS.filter(function (f) { return F.own[f.id]; }); }, get: fitOf };
   checkLevel(); V.on && V.on('core.changed', checkLevel);
   function fitImg(f, h) {
     return '<img class="avimg" src="VELENTIS-fit-' + f.n + '.webp" alt="' + esc(f.name) + '" style="height:' + (typeof h === 'number' ? h + 'px' : h) + ';width:auto;aspect-ratio:' + (f.w / f.h).toFixed(4) + '">';
@@ -223,7 +223,7 @@
     var kit = KITS[A.body], body = '';
     var miss = Object.keys(MISSING).filter(function (k) { return k !== 'fatal'; }).map(function (k) { return 'VELENTIS-av-' + k + '.webp'; });
     if (av.tab === 'body') {
-      body = '<div class="eyebrow">Body</div>' + chips('body', [['f', 'Female'], ['m', 'Male']], A.body) +
+      body = '<div class="eyebrow">Body</div>' + '<p class="note">More bodies are coming. Full sets under the Sets tab are ready-made looks.</p>' +
         '<div class="eyebrow">Skin tone</div>' + sw('skin', SKINS, A.skin) + picker('skin', A.skin, 'Custom skin tone') +
         '<div class="eyebrow">Name</div><input class="field" id="avName" maxlength="24" value="' + esc(core.state().name || '') + '" placeholder="Your hero name" aria-label="Hero name" autocomplete="off">';
     } else if (av.tab === 'face') {

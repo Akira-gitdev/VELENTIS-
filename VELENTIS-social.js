@@ -209,6 +209,7 @@
     } else if (f === 'sgNew') {
       e.preventDefault(); var n = $('sgName').value.trim(), m = $('sgMotto').value.trim();
       if (n.length < 3) { S.msg = 'Guild name needs 3 or more letters.'; renderGuilds(); return; }
+      if (V.eco && !V.eco.has('guild')) { S.msg = 'Starting a guild costs ' + V.eco.cost('guild') + ' crystals. Unlock it in the Market. Joining a guild is free.'; renderGuilds(); return; }
       O.req('POST', '/rest/v1/rpc/create_guild', { gname: n, gmotto: m }).then(function () { return loadGuilds(); }).then(function () { S.msg = 'Guild created.'; renderGuilds(); }, function (er) { fail(er, renderGuilds); });
     } else if (f === 'sgJoin') {
       e.preventDefault(); var c = $('sgCode').value.trim().toLowerCase(); if (c.length < 4) return;

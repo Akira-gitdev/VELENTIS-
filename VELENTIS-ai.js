@@ -452,7 +452,7 @@
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-act]'); if (!t) return;
     var a = t.getAttribute('data-act'), id = t.getAttribute('data-id');
-    if (a === 'vm-mode') { VS.mode = id === 'commander' ? 'commander' : 'friend'; vsSave(); renderMem(); }
+    if (a === 'vm-mode') { if (id === 'commander' && V.eco && !V.eco.has('commander')) { V.toast('Commander mode costs ' + V.eco.cost('commander') + ' crystals. Unlock it in the Market.'); return; } VS.mode = id === 'commander' ? 'commander' : 'friend'; vsSave(); renderMem(); }
     else if (a === 'vm-del') { VS.mem = VS.mem.filter(function (m) { return m.id !== id; }); vsSave(); renderMem(); }
     else if (a === 'vm-clear') {
       if (memPend) { VS.mem = []; memPend = false; vsSave(); memMsg = 'Everything forgotten.'; renderMem(); }

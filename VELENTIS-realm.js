@@ -58,7 +58,7 @@
     put('home', 'home',
       at('rm-card rm-in', [34, 36, 907, 226], top) +
       spot(270, 700, 'map', 'World', 'world') + spot(695, 640, 'book', 'Library', 'lib') + spot(385, 1110, 'list', 'Planner', 'plan') + spot(860, 940, 'check', 'Habits', 'habits') +
-      spot(215, 940, 'spark', 'Vel', 'ai') + spot(556, 300, 'calendar', 'Countdown', 'count') + spot(700, 835, 'trophy', 'Quest board', 'quests') + spot(610, 1000, 'notes', 'Notes', 'notes') +
+      spot(215, 940, 'spark', 'Vel', 'ai') + spot(556, 300, 'calendar', 'Countdown', 'count') + spot(700, 835, 'trophy', 'Quest board', 'quests') + spot(610, 1000, 'notes', 'Notes', 'notes') + spot(845, 740, 'wallet', 'Market', 'market') +
       at('rm-card rm-in', [34, 1210, 907, 1620], qcard),
       'Home');
   }

@@ -21,6 +21,7 @@
     { k: 'habits', n: 'Habit tracker', d: 'Check off your day', i: 'check' },
     { k: 'spend', n: 'Expense notebook', d: 'See where your money goes', i: 'wallet' },
     { k: 'cards', n: 'Flashcards', d: 'Turn notes into quiz cards', i: 'layers' },
+    { k: 'market', n: 'Market and wallet', d: 'Crystals, gold, gifts, trades and duels', i: 'wallet' },
     { k: 'notes', n: 'Notes vault', d: 'Keep ideas in one place', i: 'notes' },
     { k: 'plan', n: 'Daily planner', d: 'Plan your day', i: 'list' },
     { k: 'focus', n: 'Focus timer', d: 'Study in focused rounds', i: 'timer' },
@@ -203,7 +204,7 @@
     $('v-tools').innerHTML = '<div class="topbar"><button class="icon-btn" data-act="go" data-to="home" aria-label="Back">' + ic('back') + '</button><h1>All tools</h1></div>' + html;
   }
 
-  var FILEOF = { ai: 'ai', lang: 'ai', story: 'ai', write: 'ai', chef: 'life', spend: 'life', notes: 'life', count: 'life', watch: 'life', voice: 'life', habits: 'habits', cards: 'mind', plan: 'self', focus: 'self', mood: 'self', quiz: 'learn', facts: 'learn', lib: 'learn', gent: 'learn', skills: 'learn', move: 'fit', reps: 'move', run: 'run', online: 'online', friends: 'online', board: 'online', chats: 'social', guilds: 'social', invites: 'social', dungeon: 'dungeon', wardrobe: 'wardrobe' };
+  var FILEOF = { ai: 'ai', lang: 'ai', story: 'ai', write: 'ai', chef: 'life', spend: 'life', notes: 'life', count: 'life', watch: 'life', voice: 'life', habits: 'habits', cards: 'mind', plan: 'self', focus: 'self', mood: 'self', quiz: 'learn', facts: 'learn', lib: 'learn', gent: 'learn', skills: 'learn', move: 'fit', reps: 'move', run: 'run', online: 'online', friends: 'online', board: 'online', chats: 'social', guilds: 'social', invites: 'social', dungeon: 'dungeon', wardrobe: 'wardrobe', market: 'economy' };
   function renderSoon() {
     var t = stub && toolByKey(stub);
     if (!t) { go('home'); return; }
