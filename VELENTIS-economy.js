@@ -90,7 +90,7 @@
     }, function (e) { M.msg = nice(e); });
   }
   function applyGift(r) {
-    if (r && r.kind === 'fit' && r.fit) { var f = V.fit.add(r.fit, !V.fit.on()); return f ? f.name : (V.fit.get(r.fit) || {}).name; }
+    if (r && r.kind === 'fit' && r.fit) { var f = V.fit.add(r.fit, false); return f ? f.name : (V.fit.get(r.fit) || {}).name; }
     if (r && r.kind === 'gold') { pullGold(); return '+' + r.gold + ' gold'; }
     return '';
   }

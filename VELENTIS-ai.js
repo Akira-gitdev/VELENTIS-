@@ -15,8 +15,8 @@
   function fail(msg, soft) { var e = new Error(msg); e.soft = !!soft; return e; }
   function statusError(r, who) {
     if (r.status === 400 || r.status === 401 || r.status === 403) return fail('The ' + who + ' key was not accepted. Check it in Vel settings.', false);
-    if (r.status === 429) return fail('Vel is busy right now (free limit reached). Try again in a minute.', true);
-    return fail('Vel could not answer right now (error ' + r.status + ').', true);
+    if (r.status === 429) { var g = fail('Vel is busy right now (free limit reached). Try again in a minute.', true); g.overload = true; return g; }
+    var f = fail('Vel could not answer right now (error ' + r.status + '). Wait a minute and try again.', true); f.overload = r.status >= 500; return f;
   }
   function merge(msgs) {
     var out = [];
@@ -61,6 +61,13 @@
       return t.trim();
     });
   }
+  /* overloaded (500, 502, 503, 504): wait a moment and try again, up to twice */
+  function tryOnce(fn, list, system, o, n) {
+    return fn(list, system, o).catch(function (e) {
+      if (n < 2 && e && e.overload) return new Promise(function (res) { setTimeout(res, 1200 * (n + 1)); }).then(function () { return tryOnce(fn, list, system, o, n + 1); });
+      throw e;
+    });
+  }
   /* msgs: [{r:'user'|'ai', t}] */
   AI.ask = function (msgs, system, opts) {
     opts = opts || {};
@@ -71,7 +78,7 @@
     if (!chain.length) return Promise.reject(fail('Add your free AI key first (Me, then Vel settings).', false));
     function run(i, lastErr) {
       if (i >= chain.length) return Promise.reject(lastErr);
-      return chain[i](list, system, o).catch(function (e) {
+      return tryOnce(chain[i], list, system, o, 0).catch(function (e) {
         if (!(e instanceof Error) || e.message === 'Failed to fetch' || /network|load failed/i.test(e.message)) e = fail('No connection. Check your internet and try again.', true);
         if (i + 1 < chain.length) return run(i + 1, e);
         throw e;
@@ -120,6 +127,7 @@
     return 'Things the user told you to remember (use them quietly, only when useful): ' + VS.mem.slice(-20).map(function (m) { return m.t; }).join('; ') + '. ';
   }
   var MEMRULE = 'If the user shares a lasting, harmless fact worth remembering (their name for something, a goal, a routine, a preference), add one final line exactly like [remember: short fact in under 12 words]. Only facts the user actually said. Never for health, money, passwords, or private details about other people. Most replies need no such line. ';
+  AI.base = function () { return BASE; };
   AI.persona = function () {
     var st = V.core.state(), soft = VS.mode === 'commander' && lowMood(), lv = soft ? 1 : VS.level;
     return BASE + (VS.mode === 'commander' ? commander(lv, soft, st.name) : '') + memText() + (VS.remember ? MEMRULE : '') + who();
@@ -268,35 +276,6 @@
     empty: 'Say hi, ask something, or think out loud. Vel keeps it short.', placeholder: 'Talk to Vel',
     head: function () { return '<button class="btn2" style="height:40px;font-size:13px" data-act="go" data-to="velmem">' + (VS.mode === 'commander' ? 'Commander mode' : 'Friend mode') + ' · Personality and memory</button>'; },
     system: function () { return AI.persona(); }
-  });
-
-  /* ---------- Language buddy ---------- */
-  var LANGS = ['Spanish', 'French', 'German', 'Japanese', 'Hindi', 'Korean', 'Italian', 'Portuguese', 'Arabic', 'English'];
-  var LEVELS = [['beginner', 'Beginner'], ['okay', 'I know some']];
-  makeChat({
-    p: 'lg', view: 'lang', store: 'velentis.lang.v1', title: 'Language buddy', event: 'lang.turn', temp: 0.7,
-    empty: 'Type in your language. Vel will fix your mistakes gently.', placeholder: 'Write in your language',
-    setup: function (S, p) {
-      var lg = S.lang || '', lv = S.level || 'beginner';
-      return '<div class="card pad"><div class="eyebrow">Pick a language</div><div class="chips" style="margin-top:10px">' +
-        LANGS.map(function (l) { return '<button class="tag' + (lg === l ? ' on' : '') + '" data-act="lg-lang" data-id="' + l + '" aria-pressed="' + (lg === l) + '">' + l + '</button>'; }).join('') + '</div></div>' +
-        '<div class="card pad"><div class="eyebrow">Your level</div><div class="chips" style="margin-top:10px">' +
-        LEVELS.map(function (l) { return '<button class="tag' + (lv === l[0] ? ' on' : '') + '" data-act="lg-level" data-id="' + l[0] + '" aria-pressed="' + (lv === l[0]) + '">' + l[1] + '</button>'; }).join('') + '</div></div>' +
-        '<button class="btn2 main" data-act="lg-go"' + (lg ? '' : ' disabled style="opacity:.4"') + '>Start talking</button>';
-    },
-    head: function (S) { return '<p class="note">' + esc(S.lang) + ' · ' + (S.level === 'okay' ? 'some experience' : 'beginner') + '</p>'; },
-    start: function (S) { return 'Greet me in ' + S.lang + ' and ask one easy question.'; },
-    system: function (S) {
-      return BASE + 'You are in Language Buddy mode. Target language: ' + S.lang + '. Learner level: ' + (S.level === 'okay' ? 'knows some, use simple everyday sentences' : 'beginner, use very short and simple sentences') + '. ' +
-        'Reply mostly in ' + S.lang + ' (1 to 2 short sentences), then a new line starting with "EN:" giving the English meaning. ' +
-        'If the learner made a mistake, add a line starting with "Fix:" with the corrected sentence and a very short reason. End with a small question to keep the chat going. Never lecture.';
-    },
-    act: function (a, id, S, h) {
-      if (a === 'lang') { S.lang = id; h.save(); h.render(); return true; }
-      if (a === 'level') { S.level = id; h.save(); h.render(); return true; }
-      if (a === 'go') { if (S.lang) h.begin(); return true; }
-      return false;
-    }
   });
 
   /* ---------- Text adventure ---------- */

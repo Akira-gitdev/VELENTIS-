@@ -190,7 +190,7 @@
   }
   var TRADABLE = ['gate', 'raid'];
   function removeFit(id) { if (!F.own[id]) return false; delete F.own[id]; if (F.on === id) F.on = ''; fsave(); return true; }
-  V.fit = { list: FITS, own: function (id) { return !!F.own[id]; }, on: function () { return F.on; }, gift: function () { return addFit('knit', !F.on); }, drop: fitDrop, check: checkLevel,
+  V.fit = { list: FITS, own: function (id) { return !!F.own[id]; }, on: function () { return F.on; }, gift: function () { return addFit('knit', false); }, drop: fitDrop, check: checkLevel,
     add: function (id, wear) { return addFit(id, !!wear); }, remove: removeFit, tradable: function (id) { return TRADABLE.indexOf(id) !== -1; },
     mine: function () { return FITS.filter(function (f) { return F.own[f.id]; }); }, get: fitOf };
   checkLevel(); V.on && V.on('core.changed', checkLevel);
