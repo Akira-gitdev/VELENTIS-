@@ -65,8 +65,40 @@
   }
   function snapshotData() {
     var d = {}, i, k;
-    for (i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k && k.indexOf('velentis.') === 0 && k !== SK && k !== YK && k !== 'velentis.ai.v1' && k !== 'velentis.wardrobe.v1' && k !== 'velentis.logo.theme') d[k] = localStorage.getItem(k); }
+    for (i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k && k.indexOf('velentis.') === 0 && k !== SK && k !== YK && k !== 'velentis.ai.v1' && k !== 'velentis.wardrobe.v1' && k !== 'velentis.chefpics.v1' && k !== 'velentis.logo.theme') d[k] = localStorage.getItem(k); }
     return d;
+  }
+  /* ---------- vault: wardrobe photos, cooking photos and (if you keep it on) your AI key ---------- */
+  var VAULT = [['wardrobe', 'velentis.wardrobe.v1'], ['chefpics', 'velentis.chefpics.v1']], dirty = false;
+  function hashOf(t) { var h = 5381, i; for (i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return t.length + ':' + h; }
+  function aiCfg() { try { return JSON.parse(localStorage.getItem('velentis.ai.v1') || '{}') || {}; } catch (e) { return {}; } }
+  function hasKeys(c) { return !!(c.gem || c.groq); }
+  function putVault(kind, text) {
+    var h = hashOf(text); Y.vh = Y.vh || {}; if (Y.vh[kind] === h) return Promise.resolve();
+    var data; try { data = JSON.parse(text); } catch (e) { return Promise.resolve(); }
+    return req('POST', '/rest/v1/vault?on_conflict=user_id,kind', { user_id: sess.id, kind: kind, data: data, updated_at: new Date().toISOString() }, { 'Prefer': 'resolution=merge-duplicates,return=minimal' }).then(function () { Y.vh[kind] = h; saveY(); });
+  }
+  function delVault(kind) { return req('DELETE', '/rest/v1/vault?user_id=eq.' + sess.id + '&kind=eq.' + kind, undefined, { 'Prefer': 'return=minimal' }).then(function () { if (Y.vh) delete Y.vh[kind]; saveY(); }); }
+  function pushVault() {
+    var jobs = [];
+    VAULT.forEach(function (v) { var t = localStorage.getItem(v[1]); if (t) jobs.push(putVault(v[0], t)); });
+    var c = aiCfg();
+    if (c.cloud !== false && hasKeys(c)) jobs.push(putVault('keys', JSON.stringify(c)));
+    else if ((c.cloud === false || !hasKeys(c)) && !(Y.vh && Y.vh.keys === 'gone')) jobs.push(delVault('keys').then(function () { Y.vh = Y.vh || {}; Y.vh.keys = 'gone'; saveY(); }));
+    return Promise.all(jobs.map(function (j) { return j.catch(function () {}); }));
+  }
+  /* bring the vault back onto a fresh phone, but never overwrite something that is already here */
+  function restoreVault() {
+    return req('GET', '/rest/v1/vault?select=kind,data&user_id=eq.' + sess.id).then(function (rows) {
+      (rows || []).forEach(function (r) {
+        try {
+          if (r.kind === 'keys') { if (!hasKeys(aiCfg()) && r.data && (r.data.gem || r.data.groq)) localStorage.setItem('velentis.ai.v1', JSON.stringify(r.data)); return; }
+          var v = VAULT.filter(function (x) { return x[0] === r.kind; })[0]; if (!v) return;
+          var have = localStorage.getItem(v[1]); if (have && have.length >= JSON.stringify(r.data).length) return;
+          localStorage.setItem(v[1], JSON.stringify(r.data));
+        } catch (e) {}
+      });
+    }, function () {});
   }
   function pushAll() {
     if (!sess) return Promise.resolve();
@@ -74,7 +106,7 @@
     var prefer = { 'Prefer': 'resolution=merge-duplicates,return=minimal' };
     return req('PATCH', '/rest/v1/profiles?id=eq.' + sess.id, publicStats(), { 'Prefer': 'return=minimal' }).then(function () {
       return req('POST', '/rest/v1/snapshots?on_conflict=user_id', { user_id: sess.id, data: snapshotData(), device: dev, updated_at: now }, prefer);
-    }).then(function () { Y.last = now; Y.at = Date.now(); saveY(); ui.sync = 'Backed up just now'; });
+    }).then(function () { return pushVault(); }).then(function () { dirty = false; Y.last = now; Y.at = Date.now(); saveY(); ui.sync = 'Backed up just now'; });
   }
   function applyCloud(data) {
     Object.keys(data).forEach(function (k) { if (k.indexOf('velentis.') === 0 && typeof data[k] === 'string') { try { localStorage.setItem(k, data[k]); } catch (e) {} } });
@@ -86,14 +118,21 @@
       var row = rows && rows[0];
       if (!row) return pushAll();
       if (Y.last && row.updated_at <= Y.last) return pushAll();
-      if (fresh()) { applyCloud(row.data); Y.last = row.updated_at; saveY(); location.reload(); return; }
+      if (fresh()) { return restoreVault().then(function () { applyCloud(row.data); Y.last = row.updated_at; saveY(); location.reload(); }); }
       if (first || row.updated_at > Y.last) { ui.choose = row; if (V.view() === 'online') render(); }
     });
   }
   var timer = 0;
   function later() { if (!sess || !Y.auto || ui.choose) return; clearTimeout(timer); timer = setTimeout(function () { pushAll().catch(function (e) { ui.sync = 'Could not back up (' + plain(e) + ')'; }).then(function () { if (V.view() === 'online') render(); }); }, 30000); }
   V.on('core.changed', later);
-  document.addEventListener('visibilitychange', function () { if (document.hidden && sess && Y.auto && !ui.choose && Date.now() - (Y.at || 0) > 60000) pushAll().catch(function () {}); });
+  try {
+    var _set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      _set.apply(this, arguments);
+      if (this === window.localStorage && typeof k === 'string' && k.indexOf('velentis.') === 0 && k !== SK && k !== YK) { dirty = true; try { later(); } catch (e) {} }
+    };
+  } catch (e) {}
+  document.addEventListener('visibilitychange', function () { if (document.hidden && sess && Y.auto && !ui.choose && (dirty || Date.now() - (Y.at || 0) > 60000)) pushAll().catch(function () {}); });
 
   /* ---------- sign up, log in, log out ---------- */
   function auth(kind, name, pass) {
@@ -233,7 +272,7 @@
     } else if (a === 'on-tab') { ui.tab = id; ui.msg = ''; render(); }
     else if (a === 'on-out') logout();
     else if (a === 'on-sync') { ui.busy = true; ui.msg = ''; render(); checkCloud(false).then(function () { return ui.choose ? null : pushAll(); }).catch(function (er) { ui.msg = plain(er); }).then(function () { ui.busy = false; render(); }); }
-    else if (a === 'on-usecloud' && ui.choose) { applyCloud(ui.choose.data); Y.last = ui.choose.updated_at; saveY(); location.reload(); }
+    else if (a === 'on-usecloud' && ui.choose) { var ch = ui.choose; restoreVault().then(function () { applyCloud(ch.data); Y.last = ch.updated_at; saveY(); location.reload(); }); }
     else if (a === 'on-usephone') { ui.choose = null; ui.busy = true; render(); pushAll().catch(function (er) { ui.msg = plain(er); }).then(function () { ui.busy = false; render(); }); }
     else if (a === 'fr-yes') { req('PATCH', '/rest/v1/friends?user_id=eq.' + id + '&friend_id=eq.' + sess.id, { status: 'accepted' }, { 'Prefer': 'return=minimal' }).then(loadFriends, function (er) { fr.msg = plain(er); renderFriends(); }); }
     else if (a === 'fr-no') { req('DELETE', '/rest/v1/friends?or=(and(user_id.eq.' + sess.id + ',friend_id.eq.' + id + '),and(user_id.eq.' + id + ',friend_id.eq.' + sess.id + '))').then(function () { if (fr.open === id) fr.open = null; return loadFriends(); }, function (er) { fr.msg = plain(er); renderFriends(); }); }

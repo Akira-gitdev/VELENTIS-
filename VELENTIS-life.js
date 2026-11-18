@@ -114,6 +114,21 @@
   if (!CH || !Array.isArray(CH.have)) CH = { have: [], veg: false };
   var chOpen = -1;
   function chSave() { u.put('velentis.chef.v1', CH); }
+  /* photos of what you cooked: kept in their own box so they can be backed up with your account */
+  var CP = u.get('velentis.chefpics.v1', { log: [] });
+  if (!CP || !Array.isArray(CP.log)) CP = { log: [] };
+  function cpSave() { return u.put('velentis.chefpics.v1', CP); }
+  function shrinkPhoto(file) {
+    return new Promise(function (ok, no) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var k = Math.min(1, 360 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', 0.7));
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); no(new Error('bad image')); };
+      im.src = url;
+    });
+  }
 
   function recipeCard(r, idx, mins) {
     var missing = r[3].filter(function (n) { return CH.have.indexOf(n) === -1; });
@@ -132,7 +147,7 @@
         '<div class="card pad"><div class="eyebrow">' + r[1] + ' minutes' + (r[2] ? ' · vegetarian' : '') + '</div><div style="margin-top:8px">' + ings + '</div>' +
         '<p class="note" style="margin-top:8px">Assumes you have salt, oil, water and basic spices.</p></div>' +
         '<div class="card pad"><div class="eyebrow" style="margin-bottom:12px">Steps</div><ol class="steps">' + r[4].map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol></div>' +
-        '<button class="btn2 main" data-act="ch-cooked" data-id="' + chOpen + '">I cooked this</button>';
+        '<input type="file" id="chFile" accept="image/*" hidden><button class="btn2 main" data-act="ch-photo" data-id="' + chOpen + '">I cooked this: add a photo</button><p class="note" style="margin-top:8px">Take or choose a photo of your dish to earn XP.' + (CH.err ? ' <b>' + esc(CH.err) + '</b>' : '') + '</p>';
       return;
     }
     var have = CH.have;
@@ -156,7 +171,10 @@
       '<form class="form" id="chForm" novalidate><input class="field" id="chIng" placeholder="Add an ingredient, like potato" aria-label="Ingredient" autocomplete="off" autocapitalize="none"><button class="add" type="submit">Add</button></form>' +
       (chips ? '<div class="chips">' + chips + '</div>' : '') +
       '<div class="chips">' + quick + '</div>' +
-      '<button class="tag' + (CH.veg ? ' on' : '') + '" data-act="ch-veg" aria-pressed="' + CH.veg + '" style="align-self:flex-start">Vegetarian only</button>' + out;
+      '<button class="tag' + (CH.veg ? ' on' : '') + '" data-act="ch-veg" aria-pressed="' + CH.veg + '" style="align-self:flex-start">Vegetarian only</button>' + out +
+      (CP.log.length ? '<div class="sec"><h2>Your cooked dishes</h2><span class="note">' + CP.log.length + '</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' + CP.log.slice().reverse().slice(0, 12).map(function (x) {
+        return '<figure style="margin:0"><img src="' + x.p + '" alt="' + esc(x.n) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px"><figcaption class="note" style="margin-top:3px;font-size:11px">' + esc(x.n) + '</figcaption></figure>';
+      }).join('') + '</div>' : '');
   }
 
   /* ---------- Notes vault ---------- */
@@ -220,6 +238,16 @@
   } };
   V.registerTool('spend', renderSpend);
   V.registerTool('chef', renderChef);
+  document.addEventListener('change', function (e) {
+    if (e.target.id !== 'chFile') return;
+    var file = e.target.files && e.target.files[0], r = RECIPES[chOpen]; if (!file || !r) return;
+    shrinkPhoto(file).then(function (p) {
+      var it = { id: 'c' + u.uid(), n: r[0], d: iso(new Date()), p: p };
+      CP.log.push(it); CP.log = CP.log.slice(-24);
+      if (!cpSave()) { CP.log.pop(); CH.err = 'Your phone has no room for this photo. Free some space and try again.'; renderChef(); return; }
+      V.emit('chef.cook', { ref: it.id }); V.toast('Dish saved. XP earned.'); chOpen = -1; CH.err = ''; renderChef();
+    }, function () { CH.err = 'That picture could not be read. Try another one.'; renderChef(); });
+  });
   V.registerTool('notes', renderNotes);
   V.registerTool('count', renderCount);
   V.registerSearch(function (q) {
@@ -249,7 +277,7 @@
       else if (a === 'ch-veg') { CH.veg = !CH.veg; chSave(); }
       else if (a === 'ch-open') { chOpen = +id; window.scrollTo(0, 0); }
       else if (a === 'ch-back') { chOpen = -1; }
-      else if (a === 'ch-cooked') { V.emit('chef.cook', { ref: id }); chOpen = -1; }
+      else if (a === 'ch-photo') { CH.err = ''; var fi = $('chFile'); if (fi) fi.click(); return; }
       renderChef();
     } else if (a.indexOf('nt-') === 0) {
       if (a === 'nt-new') { var n = { id: 'n' + u.uid(), title: '', body: '', t: Date.now() }; NT.notes.push(n); ntSave(); nt.open = n.id; }

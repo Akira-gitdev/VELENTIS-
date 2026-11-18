@@ -17,3 +17,8 @@ Good to know:
 1. In Supabase open SQL Editor, then New query.
 2. Paste everything from VELENTIS-supabase-3.sql and press Run. Run it once only.
 3. This also sends the free Quiet Knit outfit to every account that already exists, and to every new account automatically.
+
+## Step 2d: the private vault (wardrobe photos, cooking photos, AI key)
+1. In Supabase open SQL Editor, then New query.
+2. Paste everything from VELENTIS-supabase-4.sql and press Run. Run it once only.
+3. After that, log in and tap "Back up now" once. Your wardrobe, cooking photos and AI key are then saved with your account.

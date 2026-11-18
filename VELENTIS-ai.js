@@ -448,7 +448,8 @@
       '<button class="btn2" data-act="go" data-to="velmem">Personality and memory</button>' +
       '<div class="card pad"><div class="eyebrow">Your free key</div>' +
       '<ol class="steps" style="margin-top:12px"><li>Open <b>aistudio.google.com/apikey</b> in your browser and sign in.</li><li>Tap <b>Create API key</b>, then copy it.</li><li>Paste it below and tap Save.</li></ol>' +
-      '<p class="note" style="margin-top:10px">The key stays on this phone. It is never put in backups or sent anywhere except to the AI service when you chat.</p></div>' +
+      '<p class="note" style="margin-top:10px">Your key is only sent to the AI service when you chat. If you are logged in, a private copy is also saved in your account so a new phone gets it back. Only you can read it.</p>' +
+      '<button class="tag' + (CFG.cloud !== false ? ' on' : '') + '" style="margin-top:10px" data-act="key-cloud" aria-pressed="' + (CFG.cloud !== false) + '">Back up my keys to my account: ' + (CFG.cloud !== false ? 'On' : 'Off') + '</button></div>' +
       '<form class="stack" id="keyForm" novalidate style="gap:8px"><input class="field" id="keyGem" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="' + (CFG.gem ? 'Saved ' + mask(CFG.gem) + ' (paste to replace)' : 'Paste your Gemini key') + '" aria-label="Gemini key">' +
       '<details><summary class="note" style="cursor:pointer">Backup key (optional)</summary><p class="note" style="margin:8px 0">If the first service is busy, Vel can switch to a free Groq key from console.groq.com.</p><input class="field" id="keyGroq" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="' + (CFG.groq ? 'Saved ' + mask(CFG.groq) + ' (paste to replace)' : 'Paste Groq key') + '" aria-label="Groq key"></details>' +
       '<button class="add" type="submit" style="width:100%">Save</button></form>' +
@@ -466,7 +467,8 @@
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
     var a = t.getAttribute('data-act');
-    if (a === 'key-clear') { CFG = {}; saveCfg(); testMsg = 'Keys removed from this phone.'; renderKey(); }
+    if (a === 'key-cloud') { CFG.cloud = CFG.cloud === false; saveCfg(); testMsg = CFG.cloud === false ? 'Off. Your account copy is deleted at the next backup.' : 'On. Your keys are backed up with your account.'; renderKey(); }
+    else if (a === 'key-clear') { CFG = {}; saveCfg(); testMsg = 'Keys removed from this phone.'; renderKey(); }
     else if (a === 'key-test') {
       testMsg = 'Asking Vel...'; renderKey();
       AI.ask([{ r: 'user', t: 'Say hello in five words.' }], AI.persona(), { max: 200 }).then(function (r) { testMsg = 'It works. Vel says: ' + r; if (V.view() === 'aikey') renderKey(); },
