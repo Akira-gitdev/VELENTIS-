@@ -11,9 +11,21 @@
   if (!T || typeof T.set !== 'object') T = { set: {} };
   V.tiles = {
     count: function () { return Object.keys(T.set).length; },
+    set: function () { return T.set; },
     add: function (pts) { var n = 0; pts.forEach(function (p) { var k = Math.floor(p[0] / 0.002) + '|' + Math.floor(p[1] / 0.002); if (!T.set[k]) { T.set[k] = 1; n++; } }); u.put(TK, T); return n; }
   };
 
+  var MAP = null;
+  function mountMap(id, o) { try { if (MAP) MAP.destroy(); } catch (e) {} MAP = null; var el = $(id); if (!el || !V.map) return null; MAP = V.map.mount(el, o); return MAP; }
+  /* smoothing like fitness apps use: each new GPS point is blended with where we already think you are, weighted by how accurate it is */
+  var KF = null;
+  function kalman(lat, lon, acc, t) {
+    acc = Math.max(acc || 10, 3);
+    if (!KF) { KF = { lat: lat, lon: lon, v: acc * acc, t: t }; return [lat, lon]; }
+    var dt = Math.max(0, t - KF.t) / 1000; KF.v += dt * 9;            /* we may have moved about 3 m per second */
+    var k = KF.v / (KF.v + acc * acc); KF.lat += k * (lat - KF.lat); KF.lon += k * (lon - KF.lon); KF.v = (1 - k) * KF.v; KF.t = t;
+    return [KF.lat, KF.lon];
+  }
   var L = null, watchId = null, wake = null, tick = 0, view = 'idle', result = null, msg = '', pend = null;
   function km(m) { return (m / 1000).toFixed(2); }
   function clock(sec) { sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (s < 10 ? '0' : '') + s; }
@@ -49,30 +61,41 @@
   }
   function thin(pts, n) { if (pts.length <= n) return pts; var out = [], step = pts.length / n; for (var i = 0; i < n; i++) out.push(pts[Math.floor(i * step)]); out.push(pts[pts.length - 1]); return out; }
 
+  function sigText() { var a = L && L.acc2; if (!L || !L.fix) return 'GPS signal: searching'; return 'GPS signal: ' + (a <= 10 ? 'strong' : a <= 25 ? 'good' : 'weak') + ' (about ' + Math.round(a) + ' m)'; }
   function liveHTML() {
     var s = elapsed();
     return '<div class="card pad" style="text-align:center"><div class="eyebrow">' + (L.paused ? 'Paused' : L.fix ? 'Tracking' : 'Looking for GPS...') + '</div>' +
       '<div class="clock" id="rnTime">' + clock(s) + '</div>' +
-      '<div class="metrics"><div><div class="eyebrow">Distance</div><div class="big" id="rnDist">' + km(L.m) + ' km</div></div><div><div class="eyebrow">Pace</div><div class="big" id="rnPace">' + pace(L.m, s) + '</div></div></div></div>' +
+      '<div class="metrics"><div><div class="eyebrow">Distance</div><div class="big" id="rnDist">' + km(L.m) + ' km</div></div><div><div class="eyebrow">Pace</div><div class="big" id="rnPace">' + pace(L.m, s) + '</div></div></div><div class="note" id="rnSig" style="margin-top:6px">' + sigText() + '</div></div>' +
+      '<div id="rnLive"></div>' +
       (msg ? '<p class="note" style="text-align:center">' + esc(msg) + '</p>' : '') +
       '<div class="duo">' + (L.paused ? '<button class="btn2 main" data-act="rn-resume">Resume</button>' : '<button class="btn2" data-act="rn-pause">Pause</button>') + '<button class="btn2 main" data-act="rn-stop">Finish</button></div>';
   }
   function render() {
     var el = $('v-run');
-    if (view === 'live' && L) { el.innerHTML = bar('data-act="rn-stop"', 'Run tracker') + liveHTML(); return; }
+    if (view === 'live' && L) {
+      el.innerHTML = bar('data-act="rn-stop"', 'Run tracker') + liveHTML();
+      var m = mountMap('rnLive', { height: 300, explored: V.tiles.set(), zoom: 17 });
+      if (m) { m.setTrail(L.pts.length > 1 ? L.pts : null); if (L.me) { m.setMe(L.me); m.setView(L.me.lat, L.me.lon, 17); } }
+      return;
+    }
     if (view === 'result' && result) {
       var r = result;
-      el.innerHTML = bar('data-act="rn-home"', 'Nice one') +
+      el.innerHTML = bar('data-act="rn-home"', r.old ? 'Your run' : 'Nice one') +
         '<div class="card pad" style="text-align:center"><div class="eyebrow">Distance</div><div class="clock">' + km(r.m) + ' km</div><div class="metrics"><div><div class="eyebrow">Time</div><div class="big">' + clock(r.sec) + '</div></div><div><div class="eyebrow">Pace per km</div><div class="big">' + pace(r.m, r.sec) + '</div></div></div></div>' +
-        '<canvas class="route" id="rnMap"></canvas>' +
+        '<div id="rnMap"></div>' +
         '<p class="note" style="text-align:center">' + esc(r.note) + '</p><button class="btn2 main" data-act="rn-home">Done</button>';
-      setTimeout(function () { drawPath($('rnMap'), r.pts); }, 0);
+      setTimeout(function () {
+        var m = mountMap('rnMap', { height: 320, explored: V.tiles.set(), follow: false });
+        if (m && r.pts && r.pts.length) { m.setTrail(r.pts.length > 1 ? r.pts : null); m.fit(r.pts, 40); m.setMarkers([{ lat: r.pts[r.pts.length - 1][0], lon: r.pts[r.pts.length - 1][1], label: '⚑', color: '#F2C14E' }]); }
+        else if (!V.map) drawPath($('rnMap'), r.pts);
+      }, 0);
       return;
     }
     var st = V.run.stats();
     var rows = R.runs.slice().reverse().slice(0, 12).map(function (r) {
       var p = pend === r.id;
-      return '<li class="card row"><div class="txt"><div class="nm">' + km(r.m) + ' km · ' + clock(r.sec) + '</div><div class="sub">' + u.niceDate(r.day) + ' · ' + pace(r.m, r.sec) + ' per km</div></div><button class="icon-btn' + (p ? ' warn' : '') + '" data-act="rn-del" data-id="' + r.id + '" aria-label="Delete run">' + (p ? 'Delete?' : ic('trash')) + '</button></li>';
+      return '<li class="card row"><div class="txt"><div class="nm">' + km(r.m) + ' km · ' + clock(r.sec) + '</div><div class="sub">' + u.niceDate(r.day) + ' · ' + pace(r.m, r.sec) + ' per km</div></div><button class="icon-btn" data-act="rn-open" data-id="' + r.id + '" aria-label="See route on map">' + ic('map') + '</button><button class="icon-btn' + (p ? ' warn' : '') + '" data-act="rn-del" data-id="' + r.id + '" aria-label="Delete run">' + (p ? 'Delete?' : ic('trash')) + '</button></li>';
     }).join('');
     el.innerHTML = bar(u.BACK_TOOLS, 'Run tracker') +
       '<div class="metrics"><div class="card pad"><div class="eyebrow">Last 7 days</div><div class="big">' + st.weekKm.toFixed(1) + ' km</div></div><div class="card pad"><div class="eyebrow">All time</div><div class="big">' + st.totalKm.toFixed(1) + ' km</div></div></div>' +
@@ -86,16 +109,19 @@
   function onPos(pos) {
     if (!L || L.paused) return;
     var c = pos.coords, p = { lat: c.latitude, lon: c.longitude, t: Date.now() };
-    L.fix = true;
+    L.fix = true; L.acc2 = c.accuracy; var sg = $('rnSig'); if (sg) sg.textContent = sigText();
+    L.me = { lat: p.lat, lon: p.lon, acc: c.accuracy }; if (MAP && MAP.alive()) MAP.setMe(L.me);
     if (c.accuracy > 35) { msg = 'GPS is weak. Move to open sky.'; return; }
     msg = '';
+    var sm = kalman(p.lat, p.lon, c.accuracy, p.t); p.lat = sm[0]; p.lon = sm[1];
     if (L.last) {
       var d = dist(L.last, p), dt = Math.max((p.t - L.last.t) / 1000, 1);
-      if (d < 3) return;                 /* standing still or GPS jitter */
+      if (d < 4) return;                 /* standing still or GPS jitter */
       if (d / dt > 12) return;           /* a jump, not a person */
       L.m += d; L.pts.push([Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5]);
     } else L.pts.push([Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5]);
     L.last = p;
+    if (MAP && MAP.alive()) MAP.setTrail(L.pts);
   }
   function onErr(e) {
     msg = e && e.code === 1 ? 'Location is blocked. Open your phone Settings, Apps, Velentis, Permissions, Location, then choose Allow.' : 'Cannot get GPS right now.';
@@ -123,7 +149,7 @@
   }
   function start() {
     if (!geo() && !navigator.geolocation) { msg = 'This device has no GPS access here.'; render(); return; }
-    msg = ''; L = { m: 0, acc: 0, seg: Date.now(), paused: false, last: null, pts: [], fix: false, day: iso(new Date()) };
+    msg = ''; KF = null; L = { m: 0, acc: 0, seg: Date.now(), paused: false, last: null, pts: [], fix: false, day: iso(new Date()) };
     view = 'live'; render();
     var g = geo();
     if (g && g.requestPermissions) {
@@ -169,7 +195,8 @@
     else if (a === 'rn-pause' && L) { L.acc += Date.now() - L.seg; L.paused = true; }
     else if (a === 'rn-resume' && L) { L.seg = Date.now(); L.paused = false; L.last = null; }
     else if (a === 'rn-stop' && L) { finish(); return; }
-    else if (a === 'rn-home') { view = 'idle'; result = null; msg = ''; }
+    else if (a === 'rn-open') { var rr = R.runs.filter(function (x) { return x.id === id; })[0]; if (rr) { result = { m: rr.m, sec: rr.sec, pts: rr.pts || [], note: u.niceDate(rr.day), old: true }; view = 'result'; } }
+    else if (a === 'rn-home') { view = 'idle'; result = null; msg = ''; try { MAP && MAP.destroy(); } catch (e) {} MAP = null; }
     else if (a === 'rn-del') {
       if (pend === id) { R.runs = R.runs.filter(function (r) { return r.id !== id; }); pend = null; save(); }
       else { pend = id; setTimeout(function () { if (pend === id) { pend = null; if (V.view() === 'run' && view === 'idle') render(); } }, 3000); }

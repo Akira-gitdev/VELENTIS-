@@ -14,7 +14,7 @@
   var RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
   var RANK_WORD = ['Easy', 'Steady', 'Solid', 'Hard', 'Brutal', 'Legendary'];
   var NIGHT_FROM = 21.5, NIGHT_TO = 5.5, DETOUR = 1.25, MAX_M = 4500, ARRIVE_M = 40;
-  var ui = { busy: false, msg: '', live: null, quit: false, boss: null };
+  var ui = { busy: false, msg: '', live: null, quit: false, boss: null, trail: [], map: null, sel: '' };
 
   /* ---------- the numbers ---------- */
   function rankOf(distM, f) {
@@ -31,15 +31,24 @@
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function xpFor(rank) { return Math.min(8 * (rank + 1), 96); }
 
+  var RCOL = ['#7ED08A', '#6FC5D9', '#7FA7F2', '#B38AF2', '#F2A154', '#F26B6B'];
+  /* each gate is put on a spot you can really walk to, with a real walking route. If the route service is out of reach, the old straight-line gate is used. */
   function makeOffers(me) {
-    var kinds = [[300, 900, [1.6, 1.3]], [900, 2200, [1.4, 1.1, 0.9]], [2200, MAX_M, [1.2, 1.0, 0.8]]], now = Date.now(), out = [];
-    kinds.forEach(function (k, i) {
+    var kinds = [[300, 900, [1.6, 1.3]], [900, 2200, [1.4, 1.1, 0.9]], [2200, MAX_M, [1.2, 1.0, 0.8]]], now = Date.now();
+    return Promise.all(kinds.map(function (k, i) {
       var d = Math.round(k[0] + Math.random() * (k[1] - k[0])), f = pick(k[2]), th = Math.random() * 2 * Math.PI;
       var dLat = d * Math.cos(th) / 111320, dLon = d * Math.sin(th) / (111320 * Math.cos(rad(me.lat)));
-      var mins = Math.max(5, Math.round(d / 1000 / 4 * 60 * f * DETOUR));
-      out.push({ id: 'g' + now + i, rank: rankOf(d, f), distM: d, mins: mins, lat: me.lat + dLat, lon: me.lon + dLon, expires: now + 15 * 60000 });
-    });
-    return out;
+      var cand = { lat: me.lat + dLat, lon: me.lon + dLon };
+      function plain() { var mins = Math.max(5, Math.round(d / 1000 / 4 * 60 * f * DETOUR)); return { id: 'g' + now + i, rank: rankOf(d, f), distM: d, mins: mins, lat: cand.lat, lon: cand.lon, expires: now + 15 * 60000 }; }
+      if (!V.map) return plain();
+      return V.map.snap(cand).then(function (sp) {
+        return V.map.route(me, sp).then(function (rt) {
+          if (!(rt.dist >= 150 && rt.dist <= MAX_M * 1.5)) throw new Error('bad route');
+          var dm = Math.round(rt.dist), mins = Math.max(5, Math.round(dm / 1000 / 4 * 60 * f * 1.1));
+          return { id: 'g' + now + i, rank: rankOf(dm, f), distM: dm, mins: mins, lat: sp.lat, lon: sp.lon, route: rt.pts, expires: now + 15 * 60000 };
+        });
+      }).catch(plain);
+    }));
   }
 
   /* ---------- GPS, with the phone's own permission popup ---------- */
@@ -77,15 +86,24 @@
   /* ---------- play ---------- */
   function onPos(p) {
     var A = D.active; if (!A) return;
-    ui.live = p;
+    var first = !ui.live; ui.live = p;
+    if (p.acc <= 60) {
+      var lt = ui.trail[ui.trail.length - 1];
+      if (!lt || dist({ lat: lt[0], lon: lt[1] }, p) > 6) { ui.trail.push([Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5]); if (ui.trail.length % 8 === 0) { A.trail = ui.trail.slice(-300); save(); } }
+    }
     if (p.acc <= 60 && dist(p, A) <= ARRIVE_M) { arrive(); return; }
+    if (!first && V.view() === 'dungeon' && ui.map && ui.map.alive() && $('dgDist')) {
+      ui.map.setMe({ lat: p.lat, lon: p.lon, acc: p.acc }); ui.map.setTrail(ui.trail);
+      $('dgDist').textContent = fmtDist(dist(p, A)); var dr = $('dgDir'); if (dr) dr.textContent = 'to the gate, ' + compass(bearing(p, A)) + (p.acc > 60 ? ' (GPS is weak)' : '');
+      return;
+    }
     draw();
   }
   function finish(kind, extra) {
     var A = D.active; if (!A) return;
     D.history.unshift(Object.assign({ date: u.iso(new Date()), rank: A.rank, result: kind, distM: A.distM }, extra || {})); D.history = D.history.slice(0, 20);
     D.result = Object.assign({ kind: kind, rank: A.rank }, extra || {});
-    D.active = null; ui.live = null; ui.quit = false; ui.boss = null; unwatch(); save(); draw();
+    D.active = null; ui.live = null; ui.trail = []; ui.quit = false; ui.boss = null; unwatch(); save(); draw();
   }
   function reward(A, bonus) {
     V.emit('dungeon.clear', { ref: A.id, units: A.rank + 1 });
@@ -137,29 +155,50 @@
     } else if (A) {
       var me = ui.live, d = me ? dist(me, A) : null;
       h = head('Dungeon', 'data-act="dg-back"') + '<div class="card pad" style="text-align:center"><div class="row" style="justify-content:center;gap:12px;display:flex;align-items:center">' + badge(A.rank) + '<span class="eyebrow" style="margin:0">' + RANK_WORD[A.rank] + ' gate</span></div>' +
-        '<div class="big" id="dgClock" style="font-size:44px;margin:6px 0">' + fmtClock(A.deadline - Date.now()) + '</div><div class="sub">time left</div>' + radar(A) +
-        '<div class="big" style="font-size:26px">' + (d == null ? 'Finding you...' : fmtDist(d)) + '</div><div class="sub">' + (d == null ? 'Looking for GPS' : 'to the gate, ' + compass(bearing(me, A)) + (me.acc > 60 ? ' (GPS is weak)' : '')) + '</div></div>' +
+        '<div class="big" id="dgClock" style="font-size:44px;margin:6px 0">' + fmtClock(A.deadline - Date.now()) + '</div><div class="sub">time left</div>' + (V.map ? '<div id="dgMap" style="margin:10px 0"></div>' : radar(A)) +
+        '<div class="big" id="dgDist" style="font-size:26px">' + (d == null ? 'Finding you...' : fmtDist(d)) + '</div><div class="sub" id="dgDir">' + (d == null ? 'Looking for GPS' : 'to the gate, ' + compass(bearing(me, A)) + (me.acc > 60 ? ' (GPS is weak)' : '')) + '</div></div>' +
         (ui.msg ? '<div class="err">' + esc(ui.msg) + '</div>' : '') +
         '<p class="note">Keep the screen on. Stay on public paths and roads, watch for traffic, and never enter private land or water. Get within ' + ARRIVE_M + ' m of the gate to clear it.</p>' +
         '<button class="btn2" data-act="dg-quit">' + (ui.quit ? 'Tap again to give up' : 'Give up this gate') + '</button>';
     } else {
       var night = isNight(), live = D.offers.filter(function (o) { return o.expires > Date.now(); });
       var cards = live.map(function (o) {
-        return '<button class="card row btn" data-act="dg-take" data-id="' + o.id + '">' + badge(o.rank) + '<span class="txt"><span class="nm">' + fmtDist(o.distM) + ' away · ' + o.mins + ' min</span><br><span class="sub">' + RANK_WORD[o.rank] + ' · up to ' + xpFor(o.rank) + ' XP · gear chance ' + Math.round([35, 45, 55, 70, 85, 100][o.rank]) + '%</span></span>' + ic('chev') + '</button>';
+        return '<button class="card row btn" data-act="dg-take" data-id="' + o.id + '">' + badge(o.rank) + '<span class="txt"><span class="nm">' + fmtDist(o.distM) + ' away · ' + o.mins + ' min</span><br><span class="sub">' + RANK_WORD[o.rank] + ' · up to ' + xpFor(o.rank) + ' XP · gear chance ' + Math.round([35, 45, 55, 70, 85, 100][o.rank]) + '%' + (ui.sel === o.id ? ' · <b>tap again to start</b>' : ' · tap to preview') + '</span></span>' + ic('chev') + '</button>';
       }).join('');
-      h = head('Dungeon') + '<div class="card hero"><span class="chip">' + ic('map') + '</span><h2>Dungeon gates</h2><p>Gates open at real places near you. Reach one before its timer ends. Farther and faster means harder, with better rewards.</p></div>' +
+      h = head('Dungeon') + (live.length && V.map ? '<div id="dgMap" style="margin-bottom:10px"></div>' : '') + '<div class="card hero"><span class="chip">' + ic('map') + '</span><h2>Dungeon gates</h2><p>Gates open at real places near you. Reach one before its timer ends. Farther and faster means harder, with better rewards.</p></div>' +
         (night ? '<div class="card pad"><div class="eyebrow">Gates are asleep</div><p class="note" style="margin-top:6px">They open between 5:30 am and 9:30 pm, so you are never sent out in the dark.</p></div>' :
-          (live.length ? '<div class="list">' + cards + '</div><p class="note">Straight-line distances. The time includes extra for turns and crossings. Offers last 15 minutes.</p>' : '') +
+          (live.length ? '<div class="list">' + cards + '</div><p class="note">Gates sit on real walkable paths. The map shows the route to each one. Offers last 15 minutes.</p>' : '') +
           '<button class="btn2 main" data-act="dg-find"' + (ui.busy ? ' disabled' : '') + '>' + (ui.busy ? 'Finding gates...' : live.length ? 'Reroll gates' : 'Find gates near me') + '</button>') +
         (ui.msg ? '<div class="err">' + esc(ui.msg) + '</div>' : '') +
         (D.history.length ? '<div class="eyebrow" style="margin-top:8px">Recent</div><div class="list">' + D.history.slice(0, 5).map(function (x) { return '<div class="card row">' + badge(x.rank) + '<span class="txt"><span class="nm">' + (x.result === 'clear' ? 'Cleared' : 'Collapsed') + '</span><br><span class="sub">' + esc(u.niceDate(x.date)) + (x.drop ? ' · ' + esc(x.drop.name) : '') + '</span></span></div>'; }).join('') + '</div>' : '') +
         '<p class="note">Safety first: stay on public paths, watch traffic, bring water, and skip any gate that feels wrong. Rerolling is free.</p>';
     }
     el.innerHTML = h;
+    try { if (ui.map) ui.map.destroy(); } catch (e) {} ui.map = null;
+    var mel = $('dgMap');
+    if (mel && V.map) {
+      if (A) {
+        ui.map = V.map.mount(mel, { height: 300, follow: false, zoom: 16 });
+        ui.map.setLine('route', A.route || [[ui.live ? ui.live.lat : A.lat, ui.live ? ui.live.lon : A.lon], [A.lat, A.lon]], { dash: !A.route, color: '#E0A458', w: 5 });
+        ui.map.setMarkers([{ lat: A.lat, lon: A.lon, label: RANKS[A.rank], color: RCOL[A.rank], pulse: true, big: true }]);
+        ui.map.setTrail(ui.trail.length > 1 ? ui.trail : null);
+        if (ui.live) ui.map.setMe({ lat: ui.live.lat, lon: ui.live.lon, acc: ui.live.acc });
+        ui.map.fit([[A.lat, A.lon]].concat(A.route || []).concat(ui.live ? [[ui.live.lat, ui.live.lon]] : []), 45);
+      } else {
+        var offs = D.offers.filter(function (o) { return o.expires > Date.now(); }), me = D.offersMe;
+        ui.map = V.map.mount(mel, { height: 300, follow: false, zoom: 15 });
+        offs.forEach(function (o, i) { if (o.route) ui.map.setLine('o' + i, o.route, { dash: ui.sel !== o.id, color: RCOL[o.rank], w: ui.sel === o.id ? 6 : 3 }); });
+        ui.map.setMarkers(offs.map(function (o) { return { lat: o.lat, lon: o.lon, label: RANKS[o.rank], color: RCOL[o.rank], sel: ui.sel === o.id, big: ui.sel === o.id, pulse: ui.sel === o.id }; }));
+        if (me) ui.map.setMe({ lat: me.lat, lon: me.lon, acc: me.acc });
+        var pts = offs.map(function (o) { return [o.lat, o.lon]; }); if (me) pts.push([me.lat, me.lon]);
+        ui.map.fit(pts, 40);
+      }
+    }
   }
   function draw() { if (V.view() === 'dungeon') render(); }
   V.registerTool('dungeon', function () {
     if (D.active && !ui.boss && D.active.deadline <= Date.now()) finish('fail');
+    if (D.active && !ui.trail.length && D.active.trail) ui.trail = D.active.trail.slice();
     render();
     if (D.active && watchId == null && !ui.boss) watch();
   });
@@ -171,15 +210,17 @@
     if (a === 'dg-find') {
       if (isNight()) { render(); return; }
       ui.busy = true; ui.msg = ''; render();
-      getFix().then(function (me) { D.offers = makeOffers(me); save(); ui.busy = false; render(); }, function (er) {
+      getFix().then(function (me) { return makeOffers(me).then(function (o) { D.offers = o; D.offersMe = { lat: me.lat, lon: me.lon, acc: me.acc }; ui.sel = ''; save(); ui.busy = false; render(); }); }).catch(function (er) {
         ui.busy = false; ui.msg = er && er.denied ? 'Location is blocked. Open your phone Settings, Apps, Velentis, Permissions, Location, then choose Allow.' : 'Could not find you. Go outside, or somewhere with open sky, and try again.'; render();
       });
     } else if (a === 'dg-take') {
       var o = D.offers.filter(function (x) { return x.id === t.getAttribute('data-id'); })[0]; if (!o || o.expires < Date.now()) { render(); return; }
-      D.active = { id: o.id, rank: o.rank, distM: o.distM, mins: o.mins, lat: o.lat, lon: o.lon, deadline: Date.now() + o.mins * 60000, started: Date.now() };
+      if (ui.sel !== o.id) { ui.sel = o.id; render(); return; }
+      ui.trail = [];
+      D.active = { id: o.id, rank: o.rank, distM: o.distM, mins: o.mins, lat: o.lat, lon: o.lon, route: o.route || null, trail: [], deadline: Date.now() + o.mins * 60000, started: Date.now() };
       D.offers = []; D.result = null; ui.live = null; ui.msg = ''; ui.quit = false; save(); render(); watch();
     } else if (a === 'dg-quit') {
-      if (ui.quit) { D.history.unshift({ date: u.iso(new Date()), rank: D.active.rank, result: 'gave up', distM: D.active.distM }); D.active = null; ui.quit = false; unwatch(); save(); render(); }
+      if (ui.quit) { D.history.unshift({ date: u.iso(new Date()), rank: D.active.rank, result: 'gave up', distM: D.active.distM }); D.active = null; ui.trail = []; ui.live = null; ui.quit = false; unwatch(); save(); render(); }
       else { ui.quit = true; render(); setTimeout(function () { ui.quit = false; if (V.view() === 'dungeon') render(); }, 3000); }
     } else if (a === 'dg-boss') { var A = D.active; if (A) reward(A, t.getAttribute('data-v') === '1'); }
     else if (a === 'dg-ok') { D.result = null; render(); }
