@@ -5,8 +5,9 @@
   var V = window.Velentis, u = V.u;
   var TS = 256, MAXZ = 18, MINZ = 3;
   var PROVIDERS = [
-    { id: 'carto', url: function (z, x, y, dark, hi) { return 'https://' + 'abcd'[(x + y) & 3] + '.basemaps.cartocdn.com/' + (dark ? 'dark_all' : 'rastertiles/voyager') + '/' + z + '/' + x + '/' + y + (hi ? '@2x' : '') + '.png'; }, credit: '© OpenStreetMap © CARTO' },
-    { id: 'osm', url: function (z, x, y) { return 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png'; }, credit: '© OpenStreetMap contributors' }
+    { id: 'osm', url: function (z, x, y) { return 'https://tile.openstreetmap.org/' + z + '/' + x + '/' + y + '.png'; }, credit: '\u00a9 OpenStreetMap contributors' },
+    { id: 'osmde', url: function (z, x, y) { return 'https://tile.openstreetmap.de/' + z + '/' + x + '/' + y + '.png'; }, credit: '\u00a9 OpenStreetMap contributors' },
+    { id: 'esri', url: function (z, x, y) { return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/' + z + '/' + y + '/' + x; }, credit: 'Tiles \u00a9 Esri, OpenStreetMap' }
   ];
   var prov = 0, bad = 0, cache = {}, order = [];
   function css() {
@@ -19,7 +20,7 @@
       '.vmap .vm-btns button.on{background:#E0A458}' +
       '.vmap .vm-compass{position:absolute;left:8px;top:8px;width:40px;height:40px;padding:0;border:0;background:none;cursor:pointer;z-index:2;transition:transform .15s linear}.vmap .vm-compass .vm-n{position:absolute;left:0;right:0;top:-1px;text-align:center;font:700 9px system-ui,sans-serif;color:#fff;text-shadow:0 0 3px #000;pointer-events:none}' +
       '.vmap .vm-credit{position:absolute;left:6px;bottom:4px;font-size:10px;color:#222;background:rgba(255,255,255,.7);padding:1px 5px;border-radius:6px;pointer-events:none}' +
-      '.vmap .vm-off{position:absolute;left:8px;top:8px;font-size:11px;background:rgba(0,0,0,.55);color:#fff;padding:3px 8px;border-radius:8px;pointer-events:none}';
+      '.vmap .vm-hint{position:absolute;left:8px;right:56px;bottom:26px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;padding:4px 8px;border-radius:8px;pointer-events:none}.vmap .vm-off{position:absolute;left:8px;top:8px;font-size:11px;background:rgba(0,0,0,.55);color:#fff;padding:3px 8px;border-radius:8px;pointer-events:none}';
     document.head.appendChild(s);
   }
   function isDark() {
@@ -33,36 +34,49 @@
   function uny(y, z) { var n = Math.PI - 2 * Math.PI * y / (Math.pow(2, z) * TS); return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))); }
 
   function tileImg(z, x, y, dark, hi, redraw) {
-    var P = PROVIDERS[prov], k = P.id + (dark ? 'd' : 'l') + (hi ? 'h' : '') + '/' + z + '/' + x + '/' + y, e = cache[k];
+    var P = PROVIDERS[prov], k = P.id + (dark ? 'd' : 'l') + '/' + z + '/' + x + '/' + y, e = cache[k];
     if (e) return e.ok ? e.im : null;
     var im = new Image(); e = cache[k] = { im: im, ok: false }; order.push(k);
     if (order.length > 400) { var o = order.shift(); delete cache[o]; }
-    im.onload = function () { e.ok = true; redraw(); };
+    im.onload = function () {
+      if (dark) {        /* these maps are light, so turn them into a dark map once, when they arrive */
+        try { var c = document.createElement('canvas'); c.width = im.naturalWidth || 256; c.height = im.naturalHeight || 256; var g = c.getContext('2d'); g.filter = 'invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.8)'; g.drawImage(im, 0, 0); e.im = c; } catch (x2) {}
+      }
+      e.ok = true; redraw();
+    };
     im.onerror = function () {
       bad++; delete cache[k];
-      if (bad >= 8 && prov < PROVIDERS.length - 1) { prov++; bad = 0; cache = {}; order = []; redraw(); }
+      if (bad >= 8 && prov < PROVIDERS.length - 1) { prov++; bad = 0; cache = {}; order = []; var cr = document.querySelectorAll('.vm-credit'); for (var i = 0; i < cr.length; i++) cr[i].textContent = PROVIDERS[prov].credit; redraw(); }
     };
-    im.src = P.url(z, x, y, dark, hi);
+    im.src = P.url(z, x, y);
     return null;
   }
 
   /* ---------- which way you face: your walking direction when moving, the phone's compass when standing ---------- */
-  var D2R = Math.PI / 180, CS = { h: null, subs: [], on: false };
+  var D2R = Math.PI / 180, CS = { h: null, subs: [], on: false, raw: [], weak: false, sx: 0, sy: 0 };
   function angDiff(a, b) { var d = ((a - b + 540) % 360) - 180; return d; }
   function bearingTo(a, b) { var y = Math.sin((b[1] - a[1]) * D2R) * Math.cos(b[0] * D2R), x = Math.cos(a[0] * D2R) * Math.sin(b[0] * D2R) - Math.sin(a[0] * D2R) * Math.cos(b[0] * D2R) * Math.cos((b[1] - a[1]) * D2R); return (Math.atan2(y, x) / D2R + 360) % 360; }
   function metres(a, b) { var R = 6371000, dl = (b[0] - a[0]) * D2R, dn = (b[1] - a[1]) * D2R, x = Math.sin(dl / 2) * Math.sin(dl / 2) + Math.cos(a[0] * D2R) * Math.cos(b[0] * D2R) * Math.sin(dn / 2) * Math.sin(dn / 2); return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)); }
   function compassFrom(e) {
     if (typeof e.webkitCompassHeading === 'number') return e.webkitCompassHeading;
     if (e.alpha == null || e.beta == null || e.gamma == null) return null;
-    var x = e.beta * D2R, y = e.gamma * D2R, z = e.alpha * D2R, cY = Math.cos(y), cZ = Math.cos(z), sX = Math.sin(x), sY = Math.sin(y), sZ = Math.sin(z);
-    var Vx = -cZ * sY - sZ * sX * cY, Vy = -sZ * sY + cZ * sX * cY, h = Math.atan(Vx / Vy);
-    if (Vy < 0) h += Math.PI; else if (Vx < 0) h += 2 * Math.PI;
-    return h / D2R;
+    /* the phone's own axes in the real world. Held flat we follow its top edge, held upright we follow its back, so it works both ways. */
+    var ca = Math.cos(e.alpha * D2R), sa = Math.sin(e.alpha * D2R), cb = Math.cos(e.beta * D2R), sb = Math.sin(e.beta * D2R), cg = Math.cos(e.gamma * D2R), sg = Math.sin(e.gamma * D2R);
+    var tx = -sa * cb, ty = ca * cb;                                    /* top edge, seen from above */
+    var bx = -(ca * sg + sa * sb * cg), by = -(sa * sg - ca * sb * cg);   /* back of the phone, seen from above */
+    var useBack = Math.hypot(bx, by) > Math.hypot(tx, ty), vx = useBack ? bx : tx, vy = useBack ? by : ty;
+    if (Math.hypot(vx, vy) < 0.05) return null;
+    return (Math.atan2(vx, vy) / D2R + 360) % 360;
   }
   function onOrient(e) {
     if (e.type === 'deviceorientation' && !e.absolute && typeof e.webkitCompassHeading !== 'number') return;   /* a relative reading is no use as a compass */
     var h = compassFrom(e); if (h == null || isNaN(h)) return;
-    CS.h = CS.h == null ? h : (CS.h + angDiff(h, CS.h) * 0.25 + 360) % 360;
+    /* smooth on a circle (so 359 and 1 do not fight), and judge how steady the readings are */
+    CS.sx = CS.sx * 0.88 + Math.sin(h * D2R) * 0.12; CS.sy = CS.sy * 0.88 + Math.cos(h * D2R) * 0.12;
+    if (CS.h == null) { CS.sx = Math.sin(h * D2R); CS.sy = Math.cos(h * D2R); }
+    CS.h = (Math.atan2(CS.sx, CS.sy) / D2R + 360) % 360;
+    CS.raw.push(h); if (CS.raw.length > 30) CS.raw.shift();
+    if (CS.raw.length >= 20) { var mx = 0, my = 0; CS.raw.forEach(function (v) { mx += Math.sin(v * D2R); my += Math.cos(v * D2R); }); var Rr = Math.sqrt(mx * mx + my * my) / CS.raw.length; CS.weak = Math.sqrt(-2 * Math.log(Math.max(Rr, 1e-6))) / D2R > 30; }
     CS.subs.forEach(function (fn) { try { fn(CS.h); } catch (x) {} });
   }
   function compassOn() {
@@ -88,10 +102,12 @@
     var M = { live: live, mode: live ? mode0 : 'north', hdg: null, course: null, courseAt: 0, prev: null, lat: opts.lat || 20.59, lon: opts.lon || 78.96, z: opts.zoom || 15, trail: null, lines: {}, markers: [], me: null, follow: opts.follow !== false, explored: opts.explored || null, dead: false, raf: 0, t0: Date.now() };
     el.querySelector('.vm-credit').textContent = PROVIDERS[prov].credit;
     if (!live) { var cb = el.querySelector('.vm-compass'); cb.style.pointerEvents = 'none'; }
-    function rotNow() { return M.live && M.mode === 'heading' && M.hdg != null ? M.hdg * D2R : 0; }
+    function moving() { return Date.now() - M.courseAt < 5000; }
+    function usable() { return M.hdg != null && (moving() || !CS.weak); }          /* a shaky compass is ignored unless you are walking */
+    function rotNow() { return M.live && M.mode === 'heading' && usable() ? M.hdg * D2R : 0; }
     function setHdg(t) {
       if (t == null) return; var old = M.hdg; M.hdg = old == null ? t : (old + angDiff(t, old) * 0.3 + 360) % 360;
-      if (old == null || Math.abs(angDiff(M.hdg, old)) >= 1) { redraw(); if (opts.onHeading && (old == null || Math.abs(angDiff(M.hdg, old)) >= 2)) { try { opts.onHeading(M.hdg); } catch (e) {} } }
+      if (old == null || Math.abs(angDiff(M.hdg, old)) >= 2) { redraw(); if (opts.onHeading && (old == null || Math.abs(angDiff(M.hdg, old)) >= 2)) { try { opts.onHeading(M.hdg); } catch (e) {} } }
     }
     function fromCompass(h) { if (Date.now() - M.courseAt > 5000) setHdg(h); }
     if (live) { compassOn(); CS.subs.push(fromCompass); if (CS.h != null) setHdg(CS.h); }
@@ -162,7 +178,7 @@
       if (M.me) {
         var q = project(M.me.lat, M.me.lon), r = M.me.acc ? M.me.acc / (156543.03 * Math.cos(M.me.lat * Math.PI / 180) / Math.pow(2, M.z)) : 0;
         if (r > 8) { cx.beginPath(); cx.arc(q[0], q[1], Math.min(r, 90), 0, 7); cx.fillStyle = 'rgba(80,160,255,.16)'; cx.fill(); }
-        if (M.live && M.hdg != null) {          /* the beam shows which way you face */
+        if (M.live && usable()) {          /* the beam shows which way you face */
           cx.save(); cx.translate(q[0], q[1]); cx.rotate(M.hdg * D2R);
           var gr = cx.createRadialGradient(0, 0, 4, 0, 0, 58); gr.addColorStop(0, 'rgba(59,155,255,.55)'); gr.addColorStop(1, 'rgba(59,155,255,0)');
           cx.beginPath(); cx.moveTo(0, 0); cx.arc(0, 0, 58, -Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5); cx.closePath(); cx.fillStyle = gr; cx.fill(); cx.restore();
@@ -182,6 +198,8 @@
         cx.beginPath(); cx.arc(ex, ey, 13, 0, 7); cx.fillStyle = m.color || '#F2C14E'; cx.fill(); cx.lineWidth = 2.5; cx.strokeStyle = '#fff'; cx.stroke();
         cx.fillStyle = '#1a1208'; cx.font = '700 12px system-ui,sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(m.label || '', ex, ey + 1);
       });
+      var ht = el.querySelector('.vm-hint'), wk = M.live && M.mode === 'heading' && CS.weak && !moving();
+      if (wk && !ht) { ht = document.createElement('div'); ht.className = 'vm-hint'; ht.textContent = 'Compass is weak, so north is up. Start walking and the map will turn with you.'; el.appendChild(ht); } else if (!wk && ht) ht.remove();
       var cb2 = el.querySelector('.vm-compass'); if (cb2) cb2.style.transform = 'rotate(' + (-rot / D2R).toFixed(1) + 'deg)';
       if (M.markers.some(function (m) { return m.pulse; })) { M.raf = requestAnimationFrame(function () { M.raf = 0; if (alive()) draw(); }); }
     }
