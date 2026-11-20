@@ -90,7 +90,7 @@
     }, function (e) { M.msg = nice(e); });
   }
   function applyGift(r) {
-    if (r && r.kind === 'fit' && r.fit) { var f = V.fit.add(r.fit, false); return f ? f.name : (V.fit.get(r.fit) || {}).name; }
+    if (r && r.kind === 'fit' && r.fit) { var f = V.outfit.add(r.fit, false); return f ? f.name : (V.outfit.get(r.fit) || {}).name; }
     if (r && r.kind === 'gold') { pullGold(); return '+' + r.gold + ' gold'; }
     return '';
   }
@@ -104,7 +104,7 @@
       var mine = G.list.filter(function (g) { return g.code === 'welcome'; });
       return mine.reduce(function (p, g) { return p.then(function () { return claim(g.id).then(function (w) { if (w) V.toast('A gift arrived: ' + w); }); }); }, Promise.resolve());
     }, function (e) {
-      if (!E.lg && V.fit) { E.lg = true; save(); V.fit.gift(); }   /* the setup file is missing: give it on this phone anyway */
+      if (!E.lg && V.outfit) { E.lg = true; save(); V.outfit.gift(); }   /* the setup file is missing: give it on this phone anyway */
     });
   }
 
@@ -118,14 +118,14 @@
     }).then(syncClosed, function (e) { M.msg = nice(e); });
   }
   function side(t) { var me = ses().id; return t.a === me ? { me: 'a', you: 'b' } : { me: 'b', you: 'a' }; }
-  function giveBack(tid) { (E.hold[tid] || []).forEach(function (id) { V.fit.add(id, false); }); delete E.hold[tid]; save(); }
+  function giveBack(tid) { (E.hold[tid] || []).forEach(function (id) { V.outfit.add(id, false); }); delete E.hold[tid]; save(); }
   /* closed trades: hand over what you won, or return what you set aside */
   function syncClosed() {
     return O.req('GET', '/rest/v1/trades?select=*&status=in.(done,cancelled)&order=updated_at.desc&limit=15').then(function (rows) {
       (rows || []).forEach(function (t) {
         if (E.applied[t.id]) return;
         var s = side(t);
-        if (t.status === 'done') { (t[s.you + '_fits'] || []).forEach(function (id) { V.fit.add(id, false); }); delete E.hold[t.id]; if ((t[s.you + '_fits'] || []).length) V.toast('Trade done. New outfit received.'); pullGold(); }
+        if (t.status === 'done') { (t[s.you + '_fits'] || []).forEach(function (id) { V.outfit.add(id, false); }); delete E.hold[t.id]; if ((t[s.you + '_fits'] || []).length) V.toast('Trade done. New outfit received.'); pullGold(); }
         else giveBack(t.id);
         E.applied[t.id] = 1; save();
       });
@@ -157,7 +157,7 @@
   function needLogin(what) {
     return '<div class="card hero"><span class="chip">' + ic('cloud') + '</span><h2>Log in first</h2><p>' + what + ' need an account.' + (O && O.ready ? '' : ' Online features are not set up in this app yet.') + '</p></div><button class="btn2 main" data-act="go" data-to="online">Account and sync</button>';
   }
-  function fname(id) { var f = V.fit.get(id); return f ? f.name : id; }
+  function fname(id) { var f = V.outfit.get(id); return f ? f.name : id; }
   function friendSelect(id) {
     if (!F.friends.length) return '<p class="note">Add a friend first. Gifts, trades and duels are for friends only.</p><button class="btn2" data-act="go" data-to="friends">Open friends</button>';
     return '<select class="field" id="' + id + '" aria-label="Friend">' + F.friends.map(function (f) { return '<option value="' + f + '">' + esc(name(f)) + '</option>'; }).join('') + '</select>';
@@ -177,7 +177,7 @@
     h += '<div class="eyebrow" style="margin-top:14px">Outfits for gold</div>';
     if (!ok()) h += '<p class="note">Log in to buy with gold.</p>';
     else h += SHOP.map(function (s) {
-      var own = V.fit.own(s[0]);
+      var own = V.outfit.own(s[0]);
       return '<div class="card pad"><b>' + esc(fname(s[0])) + '</b><div class="sub" style="margin:4px 0 8px">A full set. You can also find it in dungeons.</div>' + (own ? '<span class="tag on">You own it</span>' : '<button class="btn2 main" data-act="ec-buy" data-id="' + s[0] + '"' + (E.gold < s[1] ? ' disabled' : '') + '>Buy for ' + s[1] + ' gold</button>') + '</div>';
     }).join('');
     h += '<div class="eyebrow" style="margin-top:14px">Sell loot</div>';
@@ -194,7 +194,7 @@
     var inbox = G.list.length ? '<ul class="list">' + G.list.map(function (g) {
       return '<li class="card row"><span class="chip">' + ic('award') + '</span><span class="txt"><div class="nm">' + (g.kind === 'gold' ? g.gold + ' gold' : esc(fname(g.fit))) + '</div><div class="sub">from ' + esc(g.sender ? name(g.sender) : 'Velentis') + (g.note ? ' · ' + esc(g.note) : '') + '</div></span><button class="btn2 main" style="flex:none" data-act="ec-claim" data-id="' + g.id + '">Claim</button></li>';
     }).join('') + '</ul>' : '<p class="note">No gifts waiting.</p>';
-    var tr = V.fit.mine().filter(function (f) { return V.fit.tradable(f.id); });
+    var tr = V.outfit.mine().filter(function (f) { return V.outfit.tradable(f.id); });
     return '<div class="eyebrow">Waiting for you</div>' + inbox + '<div class="eyebrow" style="margin-top:14px">Send a gift</div>' +
       '<form class="form" id="ecGift" novalidate>' + friendSelect('ecGF') +
       '<select class="field" id="ecGK" aria-label="Gift type"><option value="gold">Gold (1 to 100)</option>' + tr.map(function (f) { return '<option value="fit:' + f.id + '">Outfit: ' + esc(f.name) + '</option>'; }).join('') + '</select>' +
@@ -212,8 +212,8 @@
     var t = M.trade && T.open.filter(function (x) { return x.id === M.trade; })[0];
     if (t) {
       var s = side(t), other = t[s.you === 'a' ? 'a' : 'b'], okMe = t[s.me + '_ok'], okYou = t[s.you + '_ok'];
-      var mine = V.fit.mine().filter(function (f) { return V.fit.tradable(f.id); });
-      (E.hold[t.id] || []).forEach(function (id) { if (!mine.some(function (f) { return f.id === id; })) mine.push(V.fit.get(id)); });
+      var mine = V.outfit.mine().filter(function (f) { return V.outfit.tradable(f.id); });
+      (E.hold[t.id] || []).forEach(function (id) { if (!mine.some(function (f) { return f.id === id; })) mine.push(V.outfit.get(id)); });
       var sel = T.offerF.length || T.offerG || E.hold[t.id] ? T.offerF : (t[s.me + '_fits'] || []);
       return '<div class="card pad"><div class="eyebrow">Trading with ' + esc(name(other)) + '</div></div>' +
         '<div class="card pad"><div class="eyebrow">They offer</div><b>' + esc(offerHtml(t, false)) + '</b><div class="sub">' + (okYou ? 'They confirmed' : 'Not confirmed yet') + '</div></div>' +
@@ -275,8 +275,8 @@
     if (a === 'ec-tab') { M.tab = id; M.msg = ''; M.trade = null; render(); pullAll(); }
     else if (a === 'ec-unlock') { var x = unl(id); if (x && !E.un[id] && E.cr >= x[2]) { E.cr -= x[2]; E.un[id] = 1; save(); M.msg = x[1] + ' unlocked.'; render(); } }
     else if (a === 'ec-buy') {
-      var p = SHOP.filter(function (s) { return s[0] === id; })[0]; if (!p || V.fit.own(id)) return;
-      rpc('buy_fit', { item: id }).then(function (g) { setGold(g); V.fit.add(id, false); M.msg = 'You bought ' + fname(id) + '.'; render(); }, fail);
+      var p = SHOP.filter(function (s) { return s[0] === id; })[0]; if (!p || V.outfit.own(id)) return;
+      rpc('buy_fit', { item: id }).then(function (g) { setGold(g); V.outfit.add(id, false); M.msg = 'You bought ' + fname(id) + '.'; render(); }, fail);
     }
     else if (a === 'ec-sell') {
       var it = E.loot.filter(function (i) { return i.id === id; })[0]; if (!it) return;
@@ -292,8 +292,8 @@
     else if (a === 'ec-tcancel') { rpc('trade_cancel', { tid: id }).then(function () { giveBack(id); M.trade = null; return loadTrades(); }).then(function () { M.msg = 'Trade cancelled.'; render(); }, fail); }
     else if (a === 'ec-tconfirm') {
       var tr = T.open.filter(function (x) { return x.id === id; })[0]; if (!tr) return;
-      var s = side(tr), fits = (tr[s.me + '_fits'] || []).filter(function (f) { return V.fit.own(f); });
-      fits.forEach(function (f) { V.fit.remove(f); }); E.hold[id] = (E.hold[id] || []).concat(fits); save();   /* set aside while the trade is open */
+      var s = side(tr), fits = (tr[s.me + '_fits'] || []).filter(function (f) { return V.outfit.own(f); });
+      fits.forEach(function (f) { V.outfit.remove(f); }); E.hold[id] = (E.hold[id] || []).concat(fits); save();   /* set aside while the trade is open */
       rpc('trade_confirm', { tid: id }).then(function (st) { return loadTrades().then(function () { if (st === 'done') { M.trade = null; M.msg = 'Trade done.'; } else M.msg = 'Confirmed. Waiting for your friend.'; render(); }); }, function (er) { giveBack(id); fail(er); });
     }
     else if (a === 'ec-fight') {
@@ -307,9 +307,9 @@
     if (f === 'ecGift') {
       var to = $('ecGF') && $('ecGF').value, k = $('ecGK').value, note = $('ecGN').value.trim(), g = parseInt($('ecGA').value, 10) || 0, fit = '';
       if (!to) return;
-      if (k.indexOf('fit:') === 0) { fit = k.slice(4); k = 'fit'; g = 0; if (!V.fit.own(fit)) return; }
+      if (k.indexOf('fit:') === 0) { fit = k.slice(4); k = 'fit'; g = 0; if (!V.outfit.own(fit)) return; }
       else if (g < 1 || g > 100) { M.msg = 'Pick 1 to 100 gold.'; render(); return; }
-      rpc('send_gift', { to_user: to, k: k, f: fit || null, g: g, n: note }).then(function () { if (fit) V.fit.remove(fit); M.msg = 'Gift sent to ' + name(to) + '.'; return pullGold(); }).then(function () { render(); }, fail);
+      rpc('send_gift', { to_user: to, k: k, f: fit || null, g: g, n: note }).then(function () { if (fit) V.outfit.remove(fit); M.msg = 'Gift sent to ' + name(to) + '.'; return pullGold(); }).then(function () { render(); }, fail);
     } else if (f === 'ecNewTrade') {
       var who = $('ecTF2') && $('ecTF2').value; if (!who) return;
       rpc('trade_open', { to_user: who }).then(function (tid) { return loadTrades().then(function () { M.trade = tid; T.offerG = null; T.offerF = []; render(); }); }, fail);

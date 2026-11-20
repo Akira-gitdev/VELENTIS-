@@ -195,7 +195,7 @@
     var h = '';
     h += at('rm-card rm-in', [40, 70, 901, 270],
       '<div class="rm-row" style="height:100%"><div class="rm-in" style="flex:1;gap:calc(var(--u)*.8)"><div style="font-family:var(--serif);font-weight:700;font-size:calc(var(--u)*5)">The Workshop</div><div class="rm-muted" style="font-size:calc(var(--u)*2.9)">Five departments. Pick a tool and get to work.</div></div>' +
-      '<button class="rm-btn" style="flex:none;height:calc(var(--u)*10);padding:0 calc(var(--u)*3)" data-act="go" data-to="tools">All tools</button></div>');
+      '<button class="rm-btn" style="flex:none;height:calc(var(--u)*10);padding:0 calc(var(--u)*3)" data-act="go" data-to="tools">All tools</button><button class="rm-btn" style="flex:none;height:calc(var(--u)*10);padding:0 calc(var(--u)*3);margin-left:calc(var(--u)*2)" data-act="go" data-to="manual">Guide</button></div>');
     DEPTS.forEach(function (d) {
       h += plaque(d.plaque, d.n);
       var rows = d.wide ? 1 : 2;
@@ -206,7 +206,7 @@
       var extra = '';
       if (d.wide) {
         var hasKey = V.ai && V.ai.hasKey && V.ai.hasKey();
-        extra = '<div class="rm-row" style="flex:none;font-size:calc(var(--u)*2.8)"><span class="rm-txt rm-muted" style="white-space:normal">' + (hasKey ? 'Vel is ready. Talk, practice a language, play a story or write.' : 'These four run on a free AI key that stays on your phone.') + '</span>' +
+        extra = '<div class="rm-row" style="flex:none;font-size:calc(var(--u)*2.8)"><span class="rm-txt rm-muted" style="white-space:normal">' + (hasKey ? 'Vel is ready. Talk, practice a language, play a story or write.' : 'These four run on a free AI key, saved with your account.') + '</span>' +
           (hasKey ? '' : '<button class="rm-btn solid" style="flex:none;height:calc(var(--u)*8);padding:0 calc(var(--u)*2.5)" data-act="go" data-to="aikey">Add key</button>') + '</div>';
       }
       h += at('rm-in', d.b, '<div style="flex:1;display:grid;grid-template-columns:repeat(' + d.cols + ',minmax(0,1fr));grid-template-rows:repeat(' + rows + ',minmax(0,1fr));gap:calc(var(--u)*1.6);min-height:0">' + cells + '</div>' + extra, 'gap:calc(var(--u)*1.6)');

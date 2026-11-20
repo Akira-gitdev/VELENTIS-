@@ -75,7 +75,7 @@
     var list = merge(msgs), chain = [];
     if (CFG.gem) chain.push(callGemini);
     if (CFG.groq) chain.push(callGroq);
-    if (!chain.length) return Promise.reject(fail('Add your free AI key first (Me, then Vel settings).', false));
+    if (!chain.length) return Promise.reject(fail('Add your free AI key first (Inventory, Profile, then Vel settings).', false));
     function run(i, lastErr) {
       if (i >= chain.length) return Promise.reject(lastErr);
       return tryOnce(chain[i], list, system, o, 0).catch(function (e) {

@@ -75,7 +75,7 @@
     var el = $('v-run');
     if (view === 'live' && L) {
       el.innerHTML = bar('data-act="rn-stop"', 'Run tracker') + liveHTML();
-      var m = mountMap('rnLive', { height: 300, explored: V.tiles.set(), zoom: 17 });
+      var m = mountMap('rnLive', { height: 300, explored: V.tiles.set(), zoom: 17, live: true });
       if (m) { m.setTrail(L.pts.length > 1 ? L.pts : null); if (L.me) { m.setMe(L.me); m.setView(L.me.lat, L.me.lon, 17); } }
       return;
     }

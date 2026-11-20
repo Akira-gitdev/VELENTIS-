@@ -5,6 +5,7 @@
   var KEY = 'velentis.fit.v1';
   var F = u.get(KEY, { sets: [] });
   if (!F || !Array.isArray(F.sets)) F = { sets: [] };
+  F = { sets: F.sets };   /* drop anything another tool once wrote into this box */
   var EX = [['Push-ups', 'reps'], ['Squats', 'reps'], ['Pull-ups', 'reps'], ['Sit-ups', 'reps'], ['Lunges', 'reps'], ['Burpees', 'reps'], ['Bicep curls', 'weight'], ['Bench press', 'weight'], ['Deadlift', 'weight'], ['Shoulder press', 'weight'], ['Plank', 'time'], ['Wall sit', 'time']];
   var sel = 'Push-ups', pend = null;
   function save() { u.put(KEY, F); }

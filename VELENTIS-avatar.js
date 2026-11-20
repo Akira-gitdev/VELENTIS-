@@ -161,14 +161,15 @@
      FULL SETS: rigid painted outfits. Not tinted, no customising. One is a gift for making an account,
      one unlocks at level 10, two drop from dungeons.
      ============================================================= */
-  var FK = 'velentis.fit.v1';
+  var FK = 'velentis.outfit.v1';
   var FITS = [
     { id: 'knit', n: 3, name: 'Quiet Knit', how: 'Gift for making an account', w: 368, h: 1018 },
     { id: 'hood', n: 2, name: 'Violet Hood', how: 'Reach level 10', w: 373, h: 1019 },
     { id: 'gate', n: 1, name: 'Gate Runner', how: 'Dungeon loot, rank C or higher', w: 382, h: 1018 },
     { id: 'raid', n: 4, name: 'Night Raider', how: 'Dungeon loot, rank B or higher', w: 320, h: 1017 }
   ];
-  var F = u.get(FK, null); if (!F || typeof F !== 'object') F = {};
+  var F = u.get(FK, null);
+  if (!F || typeof F !== 'object') { var oldF = u.get('velentis.fit.v1', null); F = oldF && oldF.own && typeof oldF.own === 'object' ? { own: oldF.own, on: oldF.on, miss: oldF.miss } : {}; }   /* outfits used to share a box with the workout log */
   F.own = F.own && typeof F.own === 'object' ? F.own : {}; F.on = F.on || ''; F.miss = F.miss | 0;
   function fsave() { u.put(FK, F); }
   function fitOf(id) { return FITS.filter(function (f) { return f.id === id; })[0]; }
@@ -190,7 +191,7 @@
   }
   var TRADABLE = ['gate', 'raid'];
   function removeFit(id) { if (!F.own[id]) return false; delete F.own[id]; if (F.on === id) F.on = ''; fsave(); return true; }
-  V.fit = { list: FITS, own: function (id) { return !!F.own[id]; }, on: function () { return F.on; }, gift: function () { return addFit('knit', false); }, drop: fitDrop, check: checkLevel,
+  V.outfit = { list: FITS, own: function (id) { return !!F.own[id]; }, on: function () { return F.on; }, gift: function () { return addFit('knit', false); }, drop: fitDrop, check: checkLevel,
     add: function (id, wear) { return addFit(id, !!wear); }, remove: removeFit, tradable: function (id) { return TRADABLE.indexOf(id) !== -1; },
     mine: function () { return FITS.filter(function (f) { return F.own[f.id]; }); }, get: fitOf };
   checkLevel(); V.on && V.on('core.changed', checkLevel);

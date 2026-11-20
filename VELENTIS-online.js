@@ -146,7 +146,7 @@
     } else p = req('POST', '/auth/v1/token?grant_type=password', { email: emailOf(name), password: pass });
     return p.then(function (j) {
       if (!j || !j.access_token) throw new Error('Turn off "Confirm email" in Supabase (see the README).');
-      setSession(j, name); ui.busy = false; ui.msg = ''; try { if (V.eco) V.eco.sync(); else if (V.fit) V.fit.gift(); } catch (e) {}
+      setSession(j, name); ui.busy = false; ui.msg = ''; try { if (V.eco) V.eco.sync(); else if (V.outfit) V.outfit.gift(); } catch (e) {}
       return checkCloud(true).then(function () { return pushAll().catch(function () {}); });
     }).catch(function (e) { ui.busy = false; ui.msg = /Confirm email/.test(e.message) ? e.message : plain(e); }).then(function () { render(); });
   }
