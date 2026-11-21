@@ -22,7 +22,7 @@
   function kalman(lat, lon, acc, t) {
     acc = Math.max(acc || 10, 3);
     if (!KF) { KF = { lat: lat, lon: lon, v: acc * acc, t: t }; return [lat, lon]; }
-    var dt = Math.max(0, t - KF.t) / 1000; KF.v += dt * 9;            /* we may have moved about 3 m per second */
+    var dt = Math.max(0, t - KF.t) / 1000; KF.v += dt * 40;           /* a person can move several metres a second, so trust new fixes fast */
     var k = KF.v / (KF.v + acc * acc); KF.lat += k * (lat - KF.lat); KF.lon += k * (lon - KF.lon); KF.v = (1 - k) * KF.v; KF.t = t;
     return [KF.lat, KF.lon];
   }
@@ -110,16 +110,18 @@
     if (!L || L.paused) return;
     var c = pos.coords, p = { lat: c.latitude, lon: c.longitude, t: Date.now() };
     L.fix = true; L.acc2 = c.accuracy; var sg = $('rnSig'); if (sg) sg.textContent = sigText();
-    L.me = { lat: p.lat, lon: p.lon, acc: c.accuracy }; if (MAP && MAP.alive()) MAP.setMe(L.me);
-    if (c.accuracy > 35) { msg = 'GPS is weak. Move to open sky.'; return; }
-    msg = '';
+    if (c.accuracy > 60) { msg = 'GPS is weak. Move to open sky.'; L.me = { lat: p.lat, lon: p.lon, acc: c.accuracy }; if (MAP && MAP.alive()) MAP.setMe(L.me); return; }
+    msg = c.accuracy > 25 ? 'GPS is a bit weak. Open sky helps.' : '';
     var sm = kalman(p.lat, p.lon, c.accuracy, p.t); p.lat = sm[0]; p.lon = sm[1];
+    L.me = { lat: p.lat, lon: p.lon, acc: c.accuracy }; if (MAP && MAP.alive()) MAP.setMe(L.me);   /* dot moves on every fix */
+    var pt = [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lon * 1e6) / 1e6];
     if (L.last) {
       var d = dist(L.last, p), dt = Math.max((p.t - L.last.t) / 1000, 1);
-      if (d < 4) return;                 /* standing still or GPS jitter */
+      var need = Math.max(1.5, Math.min(c.accuracy * 0.4, 8));   /* small steps count when GPS is sharp */
+      if (d < need) return;
       if (d / dt > 12) return;           /* a jump, not a person */
-      L.m += d; L.pts.push([Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5]);
-    } else L.pts.push([Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5]);
+      L.m += d; L.pts.push(pt);
+    } else L.pts.push(pt);
     L.last = p;
     if (MAP && MAP.alive()) MAP.setTrail(L.pts);
   }

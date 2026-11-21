@@ -98,7 +98,7 @@
     var first = !ui.live; ui.live = p;
     if (p.acc <= 60) {
       var lt = ui.trail[ui.trail.length - 1];
-      if (!lt || dist({ lat: lt[0], lon: lt[1] }, p) > 6) { ui.trail.push([Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5]); if (ui.trail.length % 8 === 0) { A.trail = ui.trail.slice(-300); save(); } }
+      if (!lt || dist({ lat: lt[0], lon: lt[1] }, p) > Math.max(2, Math.min(p.acc * 0.4, 8))) { ui.trail.push([Math.round(p.lat * 1e6) / 1e6, Math.round(p.lon * 1e6) / 1e6]); if (ui.trail.length % 8 === 0) { A.trail = ui.trail.slice(-300); save(); } }
     }
     if (p.acc <= 60 && dist(p, A) <= ARRIVE_M) { arrive(); return; }
     if (!first && V.view() === 'dungeon' && ui.map && ui.map.alive() && $('dgDist')) {
