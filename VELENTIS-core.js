@@ -94,6 +94,7 @@
     'mood.log': { attr: 'discipline', xp: 5, cap: 5, label: 'Checked in with your mood' },
     'ai.chat': { attr: 'communication', xp: 2, cap: 10, label: 'Chatted with Vel' },
     'lang.turn': { attr: 'communication', xp: 3, cap: 30, label: 'Practiced a language' },
+    'course.learn': { attr: 'communication', xp: 2, cap: 40, label: 'Studied in the Word course' },
     'lang.review': { attr: 'knowledge', xp: 2, cap: 30, label: 'Reviewed a saved word' },
     'story.turn': { attr: 'knowledge', xp: 2, cap: 20, label: 'Played the story' },
     'quiz.done': { attr: 'knowledge', xp: 3, cap: 45, label: 'Got a quiz answer right' },
@@ -110,7 +111,7 @@
     'watch.done': { attr: 'knowledge', xp: 3, cap: 9, label: 'Finished something on your watchlist' },
     'voice.memo': { attr: 'discipline', xp: 3, cap: 9, label: 'Recorded a voice memo' }
   };
-  var TOOL_FOR = { 'dungeon.clear': 'dungeon', 'wardrobe.wear': 'wardrobe', 'write.turn': 'write', 'watch.done': 'watch', 'voice.memo': 'voice', 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'lang.review': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
+  var TOOL_FOR = { 'dungeon.clear': 'dungeon', 'wardrobe.wear': 'wardrobe', 'write.turn': 'write', 'watch.done': 'watch', 'voice.memo': 'voice', 'habit.done': 'habits', 'cards.study': 'cards', 'spend.add': 'spend', 'chef.cook': 'chef', 'note.add': 'notes', 'plan.done': 'plan', 'focus.done': 'focus', 'mood.log': 'mood', 'ai.chat': 'ai', 'lang.turn': 'lang', 'course.learn': 'course', 'lang.review': 'lang', 'story.turn': 'story', 'quiz.done': 'quiz', 'facts.guess': 'facts', 'lib.read': 'lib', 'gent.lesson': 'gent', 'skills.lesson': 'skills', 'workout.log': 'move', 'reps.done': 'reps', 'run.done': 'run' };
 
   function seenToday(d) { if (C.seen.d !== d) C.seen = { d: d, keys: {} }; return C.seen.keys; }
   function dayXp(type, d) { return C.ledger.reduce(function (a, e) { return e.d === d && e.s === type ? a + e.xp : a; }, 0); }

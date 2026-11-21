@@ -189,7 +189,7 @@
     { n: 'MIND', plaque: [565, 432, 830, 478], b: [514, 488, 878, 728], tools: [['quiz', 'help', 'Quiz'], ['facts', 'globe', 'Myths'], ['lib', 'book', 'Library'], ['cards', 'layers', 'Cards'], ['gent', 'award', 'Academy'], ['notes', 'notes', 'Notes']], cols: 3 },
     { n: 'LIFE', plaque: [110, 792, 375, 838], b: [56, 848, 428, 1092], tools: [['spend', 'wallet', 'Money'], ['chef', 'chef', 'Chef'], ['skills', 'bulb', 'Skills'], ['count', 'timer', 'Events'], ['watch', 'play', 'Watch'], ['voice', 'mic', 'Voice']], cols: 3 },
     { n: 'WORLD', plaque: [565, 792, 830, 838], b: [514, 848, 878, 1092], tools: [['run', 'route', 'Run'], ['reps', 'camera', 'Reps'], ['move', 'activity', 'Workout'], ['dungeon', 'map', 'Dungeon']], cols: 2 },
-    { n: 'INTELLIGENCE', plaque: [290, 1152, 655, 1200], b: [54, 1210, 888, 1468], tools: [['ai', 'spark', 'Vel'], ['lang', 'lang', 'Languages'], ['story', 'compass', 'Adventure'], ['write', 'pen', 'Writing']], cols: 4, wide: true }
+    { n: 'INTELLIGENCE', plaque: [290, 1152, 655, 1200], b: [54, 1210, 888, 1468], tools: [['ai', 'spark', 'Vel'], ['course', 'lang', 'Languages'], ['story', 'compass', 'Adventure'], ['write', 'pen', 'Writing']], cols: 4, wide: true }
   ];
   function renderWorkshop() {
     var h = '';

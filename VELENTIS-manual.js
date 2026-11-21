@@ -29,6 +29,7 @@
       ['Your AI key and privacy', 'Your key is only used to talk to the AI service. If you are logged in, a private copy is saved in your account so a new phone gets it back. You can turn that off in Vel settings.']
     ]],
     ['learn', 'Learn', [
+      ['Word course', 'A small offline course with no AI and no key. Per language: 100 verbs, 100 objects, 100 subjects and 100 helper words, most used first. Learn 5 new words at a time with a quick check, see them on a heat chart that turns from cold to hot as you learn, practise the letters, read short grammar lessons, put sentences in order, and make your own sentences. Japanese is ready; more languages are coming.'],
       ['Language buddy', 'Practice 19 languages with Vel. Pick your level and a daily goal. Three modes: free chat, role-play (8 scenes like cafe and airport) and Teach me. Every reply shows the sentence, how to say it in English letters, and the English meaning. Mistakes get a gentle fix. Tap Save on new words to keep them. The Words tab brings words back on a schedule (1, 3, 7, 14 and 30 days) with flashcards and a quiz. Hear it reads replies aloud with your phone’s voice and the mic lets you speak. Needs an AI key.'],
       ['Quiz', 'Six categories, 8 questions a round. With an AI key you can quiz yourself on any topic. 3 XP for each right answer.'],
       ['Myths and facts', 'Is this true or a myth? 37 short rounds. Works offline.'],
