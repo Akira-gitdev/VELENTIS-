@@ -23,6 +23,7 @@
     { k: 'spend', n: 'Expense notebook', d: 'See where your money goes', i: 'wallet' },
     { k: 'cards', n: 'Flashcards', d: 'Turn notes into quiz cards', i: 'layers' },
     { k: 'manual', n: 'Guide to Velentis', d: 'Every feature explained', i: 'book' },
+    { k: 'status', n: 'Status check', d: 'Is everything working?', i: 'check' },
     { k: 'market', n: 'Market and wallet', d: 'Crystals, gold, gifts, trades and duels', i: 'wallet' },
     { k: 'notes', n: 'Notes vault', d: 'Keep ideas in one place', i: 'notes' },
     { k: 'plan', n: 'Daily planner', d: 'Plan your day', i: 'list' },
@@ -192,7 +193,7 @@
     ['Body', ['move', 'reps', 'run', 'dungeon']],
     ['Daily life', ['wardrobe', 'habits', 'plan', 'focus', 'mood', 'notes', 'count', 'spend', 'chef']],
     ['Together', ['online', 'friends', 'board']],
-    ['More', ['manual', 'market', 'watch', 'voice']]
+    ['More', ['manual', 'status', 'market', 'watch', 'voice']]
   ];
   function renderTools() {
     var html = '', seen = {};
@@ -206,7 +207,7 @@
     $('v-tools').innerHTML = '<div class="topbar"><button class="icon-btn" data-act="go" data-to="home" aria-label="Back">' + ic('back') + '</button><h1>All tools</h1></div>' + html;
   }
 
-  var FILEOF = { course: 'course', manual: 'manual', market: 'economy', ai: 'ai', story: 'ai', write: 'ai', chef: 'life', spend: 'life', notes: 'life', count: 'life', watch: 'life', voice: 'life', habits: 'habits', cards: 'mind', plan: 'self', focus: 'self', mood: 'self', quiz: 'learn', facts: 'learn', lib: 'learn', gent: 'learn', skills: 'learn', move: 'fit', reps: 'move', run: 'run', online: 'online', friends: 'online', board: 'online', chats: 'social', guilds: 'social', invites: 'social', dungeon: 'dungeon', wardrobe: 'wardrobe', market: 'economy', lang: 'lang' };
+  var FILEOF = { status: 'status', course: 'course', manual: 'manual', market: 'economy', ai: 'ai', story: 'ai', write: 'ai', chef: 'life', spend: 'life', notes: 'life', count: 'life', watch: 'life', voice: 'life', habits: 'habits', cards: 'mind', plan: 'self', focus: 'self', mood: 'self', quiz: 'learn', facts: 'learn', lib: 'learn', gent: 'learn', skills: 'learn', move: 'fit', reps: 'move', run: 'run', online: 'online', friends: 'online', board: 'online', chats: 'social', guilds: 'social', invites: 'social', dungeon: 'dungeon', wardrobe: 'wardrobe', market: 'economy', lang: 'lang' };
   function renderSoon() {
     var t = stub && toolByKey(stub);
     if (!t) { go('home'); return; }

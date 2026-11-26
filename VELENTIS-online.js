@@ -111,6 +111,25 @@
   function applyCloud(data) {
     Object.keys(data).forEach(function (k) { if (k.indexOf('velentis.') === 0 && typeof data[k] === 'string') { try { localStorage.setItem(k, data[k]); } catch (e) {} } });
   }
+  /* merge: keep everything from this phone AND from the online copy (lists are joined, numbers take the bigger one) */
+  function mergeVal(a, b) {
+    if (a === undefined) return b; if (b === undefined) return a;
+    if (Array.isArray(a) && Array.isArray(b)) { var seen = {}, out = []; a.concat(b).forEach(function (x) { var k = JSON.stringify(x); if (!seen[k]) { seen[k] = 1; out.push(x); } }); return out; }
+    if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) { var o = {}; Object.keys(a).concat(Object.keys(b)).forEach(function (k) { if (!(k in o)) o[k] = mergeVal(a[k], b[k]); }); return o; }
+    if (typeof a === 'number' && typeof b === 'number') return Math.max(a, b);
+    return a;
+  }
+  function mergeData(cloud) {
+    Object.keys(cloud).forEach(function (k) {
+      if (k.indexOf('velentis.') !== 0 || typeof cloud[k] !== 'string' || k === SK || k === YK) return;
+      var loc = localStorage.getItem(k); if (loc == null) { try { localStorage.setItem(k, cloud[k]); } catch (e) {} return; }
+      try {
+        var m = mergeVal(JSON.parse(loc), JSON.parse(cloud[k]));
+        if (k === 'velentis.core.v1' && m && m.xp) { var t = 0; Object.keys(m.xp).forEach(function (a) { t += +m.xp[a] || 0; }); m.total = t; }
+        localStorage.setItem(k, JSON.stringify(m));
+      } catch (e) { /* not a list or object: keep the version on this phone */ }
+    });
+  }
   function fresh() { var s = V.core.state(); return !s.total; }
   /* look at the cloud copy and decide: nothing there, same as ours, or different */
   function checkCloud(first) {
@@ -170,7 +189,7 @@
       return;
     }
     var s = V.core.state(), li = V.core.levelInfo(s.total);
-    var choose = ui.choose ? '<div class="card pad"><div class="eyebrow">Two copies found</div><p style="margin:6px 0 12px">The online copy is from ' + esc(new Date(ui.choose.updated_at).toLocaleString()) + (ui.choose.device ? ' (' + esc(ui.choose.device) + ')' : '') + '. Which one do you want to keep?</p><div class="duo"><button class="btn2 main" data-act="on-usecloud">Use online copy</button><button class="btn2" data-act="on-usephone">Keep this phone</button></div></div>' : '';
+    var choose = ui.choose ? '<div class="card pad"><div class="eyebrow">Two copies found</div><p style="margin:6px 0 12px">The online copy is from ' + esc(new Date(ui.choose.updated_at).toLocaleString()) + (ui.choose.device ? ' (' + esc(ui.choose.device) + ')' : '') + '. Which one do you want to keep?</p><button class="btn2 main" data-act="on-merge" style="width:100%;margin-bottom:8px">Merge both (safest)</button><p class="note" style="margin:0 0 10px">Keeps everything from this phone and the online copy. Nothing is lost.</p><div class="duo"><button class="btn2" data-act="on-usecloud">Use online copy only</button><button class="btn2" data-act="on-usephone">Keep this phone only</button></div></div>' : '';
     el.innerHTML = bar(u.BACK_TOOLS, 'Account and sync') +
       '<div class="card pad"><div class="eyebrow">Signed in as</div><div class="big">' + esc(sess.username) + '</div><p class="note" style="margin-top:6px">Level ' + li.level + ' · ' + s.total + ' XP</p></div>' + choose +
       '<div class="card pad"><div class="eyebrow">Backup and sync</div><p class="note" style="margin:6px 0 12px">' + esc(ui.sync || (Y.at ? 'Last backup ' + ago(Y.at) : 'Not backed up yet')) + '</p><button class="btn2 main" data-act="on-sync"' + (ui.busy ? ' disabled' : '') + '>' + (ui.busy ? 'Working...' : 'Back up now') + '</button>' +
@@ -181,7 +200,7 @@
       (ui.msg ? '<div class="err">' + esc(ui.msg) + '</div>' : '') +
       '<button class="link" data-act="on-out">Log out</button>';
   }
-  V.online = { ready: ready, session: function () { return sess; }, req: req, plain: plain, stats: publicStats };
+  V.online = { ready: ready, session: function () { return sess; }, req: req, plain: plain, stats: publicStats, state: function () { return { last: Y.last, at: Y.at, dirty: dirty, auto: !!Y.auto, vault: Y.vh || {} }; }, pushNow: function () { return pushAll(); } };
   V.registerTool('online', render);
 
   /* ---------- friends ---------- */
@@ -273,6 +292,7 @@
     else if (a === 'on-out') logout();
     else if (a === 'on-sync') { ui.busy = true; ui.msg = ''; render(); checkCloud(false).then(function () { return ui.choose ? null : pushAll(); }).catch(function (er) { ui.msg = plain(er); }).then(function () { ui.busy = false; render(); }); }
     else if (a === 'on-usecloud' && ui.choose) { var ch = ui.choose; restoreVault().then(function () { applyCloud(ch.data); Y.last = ch.updated_at; saveY(); location.reload(); }); }
+    else if (a === 'on-merge' && ui.choose) { var mc = ui.choose; restoreVault().then(function () { mergeData(mc.data); Y.last = mc.updated_at; saveY(); location.reload(); }); }
     else if (a === 'on-usephone') { ui.choose = null; ui.busy = true; render(); pushAll().catch(function (er) { ui.msg = plain(er); }).then(function () { ui.busy = false; render(); }); }
     else if (a === 'fr-yes') { req('PATCH', '/rest/v1/friends?user_id=eq.' + id + '&friend_id=eq.' + sess.id, { status: 'accepted' }, { 'Prefer': 'return=minimal' }).then(loadFriends, function (er) { fr.msg = plain(er); renderFriends(); }); }
     else if (a === 'fr-no') { req('DELETE', '/rest/v1/friends?or=(and(user_id.eq.' + sess.id + ',friend_id.eq.' + id + '),and(user_id.eq.' + id + ',friend_id.eq.' + sess.id + '))').then(function () { if (fr.open === id) fr.open = null; return loadFriends(); }, function (er) { fr.msg = plain(er); renderFriends(); }); }
