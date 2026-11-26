@@ -68,20 +68,28 @@
       '.cs-lg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}' +
       '.cs-lg .cs-cell{font-size:22px;padding:8px 0}' +
       '.cs-pick{padding:8px 11px;border-radius:12px;border:1px solid var(--card-line);background:transparent;color:inherit;font-size:20px}' +
-      '.cs-sel{width:100%;margin-top:4px}';
+      '.cs-sel{width:100%;margin-top:4px}' +
+      '.cs-tabs{display:flex;gap:6px;overflow-x:auto;white-space:nowrap;scrollbar-width:none;margin:10px 0;padding-bottom:2px}.cs-tabs::-webkit-scrollbar{display:none}.cs-tabs .tag{flex:none}' +
+      '.cs-ring{position:relative;width:58px;height:58px;display:grid;place-items:center;flex:none;font-weight:700;font-size:16px}.cs-ring>i{position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(circle,transparent 22px,#000 23px);mask:radial-gradient(circle,transparent 22px,#000 23px)}' +
+      '.cs-top{display:flex;gap:12px;align-items:center}.cs-set{display:flex;gap:10px;align-items:center;width:100%;text-align:left}.cs-set .txt{flex:1;min-width:0}' +
+      '.cs-dots{display:flex;gap:5px;margin-bottom:10px}.cs-dots i{flex:1;height:5px;border-radius:3px;background:var(--card-line)}.cs-dots i.on{background:var(--accent)}' +
+      '.cs-leg{display:flex;align-items:center;gap:8px;font-size:11px;opacity:.8;margin:2px 0 8px}.cs-leg i{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,hsla(210,58%,53%,.35),hsla(174,66%,49%,.55),hsla(66,74%,45%,.75),hsla(30,82%,41%,.9))}' +
+      '.cs-big{font-size:36px;line-height:1.6;text-align:center}.cs-pop{animation:csPop .25s ease}@keyframes csPop{from{transform:scale(.96);opacity:.4}to{transform:none;opacity:1}}';
     document.head.appendChild(st);
   })();
   function heat(l) { return l ? 'background:hsla(' + Math.round(210 - (l - 1) * 36) + ',' + (50 + l * 8) + '%,' + (55 - l * 2) + '%,' + (0.22 + l * 0.1) + ')' : 'background:rgba(128,128,128,.10)'; }
   function blk(p) {
-    return '<span class="cs-b"><span class="cs-w">' + esc(p[0]) + '</span>' + (S.sh.r && p[1] && p[1] !== p[0] ? '<span class="cs-r">' + esc(p[1]) + '</span>' : '') +
+    return '<span class="cs-b"><span class="cs-w">' + esc(p[0]) + '</span>' + (S.sh.r && !noR() && p[1] && p[1] !== p[0] ? '<span class="cs-r">' + esc(p[1]) + '</span>' : '') +
       (S.sh.m && p[2] ? '<span class="cs-g">' + esc(p[2]) + '</span>' : '') + '</span>';
   }
-  function blocks(parts) { return '<div class="cs-row">' + parts.map(blk).join('') + '</div>'; }
+  function blocks(parts) { return '<div class="cs-row"' + rtl() + '>' + parts.map(blk).join('') + '</div>'; }
   function big(w) {
     var a = esc(w.w);
-    if (S.sh.r && w.r && w.r !== w.w) a = '<ruby>' + a + '<rt>' + esc(w.r) + '</rt></ruby>';
-    return '<div style="font-size:34px;line-height:1.7">' + a + '</div>' + (S.sh.ro && w.ro ? '<div class="sub" style="font-style:italic">' + esc(w.ro) + '</div>' : '');
+    if (S.sh.r && !noR() && w.r && w.r !== w.w) a = '<ruby>' + a + '<rt>' + esc(w.r) + '</rt></ruby>';
+    return '<div class="cs-big"' + rtl() + '>' + a + '</div>' + (S.sh.ro && !noR() && w.ro ? '<div class="sub" style="font-style:italic;text-align:center">' + esc(w.ro) + '</div>' : '');
   }
+  function noR() { var P = pack(); return !!(P && P.noRead); }
+  function rtl() { var P = pack(); return P && P.rtl ? ' dir="rtl"' : ''; }
   function lvlName(l) { return ['New', 'Seen', 'Warm', 'Good', 'Strong', 'Hot', 'Mastered'][l] || ''; }
 
   /* ---------- state ---------- */
@@ -111,12 +119,13 @@
   function sessionView() {
     var P = pack(), s = sess, html = '';
     if (s.phase === 'done') {
-      return '<div class="card hero"><span class="chip">' + ic('trophy') + '</span><h2>' + (s.kind === 'new' ? 'New words learned' : 'Review done') + '</h2><p>' + s.ok + ' of ' + s.list.length + ' right. Words you miss come back sooner.</p></div>' +
-        '<button class="btn2 main" data-act="cs-home">Back to the course</button>';
+      var pct = Math.round(s.ok / s.list.length * 100);
+      return '<div class="card hero cs-pop"><span class="chip">' + ic('trophy') + '</span><h2>' + (s.kind === 'new' ? 'Nice. ' + s.list.length + ' new words' : 'Review done') + '</h2><p>' + s.ok + ' of ' + s.list.length + ' right (' + pct + '%). ' + (pct === 100 ? 'Perfect round.' : 'Words you miss come back sooner.') + '</p></div>' +
+        '<button class="btn2 main" data-act="' + (s.kind === 'new' ? 'cs-again' : 'cs-home') + '">' + (s.kind === 'new' ? 'Learn 5 more' : 'Back to the course') + '</button><button class="link" data-act="cs-home">Back to the course</button>';
     }
     if (s.phase === 'intro') {
       var c = cur(), w = c.w;
-      html = '<div class="card pad" style="text-align:center"><div class="eyebrow">New word ' + (s.n + 1) + ' of ' + s.list.length + '</div>' + big(w) +
+      html = '<div class="card pad cs-pop" style="text-align:center">' + dots(s.n + 1, s.list.length) + '<div class="eyebrow">New word ' + (s.n + 1) + ' of ' + s.list.length + '</div>' + big(w) +
         (S.sh.m ? '<div style="font-size:20px;margin:6px 0 10px"><b>' + esc(w.en) + '</b></div>' : '') +
         '<button class="btn2" data-act="cs-say" data-id="' + esc(w.w) + '">' + ic('volume') + ' Hear it</button>' + demo(c.it.set, w) +
         '<div style="margin-top:14px"><button class="btn2 main" data-act="cs-intro-next">' + (s.n + 1 < s.list.length ? 'Next word' : 'Quick check') + '</button></div></div>';
@@ -124,7 +133,7 @@
     }
     if (s.phase === 'quiz') {
       var q = s.qs[s.qi];
-      html = '<div class="card pad"><div class="eyebrow">Check ' + (s.qi + 1) + ' of ' + s.qs.length + '</div><div style="text-align:center">' + big(q.w) + '</div>' +
+      html = '<div class="card pad cs-pop">' + dots(s.qi + 1, s.qs.length) + '<div class="eyebrow">Check ' + (s.qi + 1) + ' of ' + s.qs.length + '</div><div style="text-align:center">' + big(q.w) + '</div>' +
         '<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">' + q.opts.map(function (o, k) {
           var st = s.ans == null ? '' : o === q.w.en ? ' main' : (s.ans === k ? ' warn' : '');
           return '<button class="btn2' + st + '" data-act="cs-pick" data-id="' + k + '"' + (s.ans != null ? ' disabled' : '') + '>' + esc(o) + '</button>';
@@ -132,11 +141,12 @@
       return html;
     }
     var f = cur(), fw = f.w;   /* flash review */
-    return '<div class="card pad" style="text-align:center"><div class="eyebrow">Review ' + (s.n + 1) + ' of ' + s.list.length + '</div>' + big(fw) +
+    return '<div class="card pad cs-pop" style="text-align:center">' + dots(s.n + 1, s.list.length) + '<div class="eyebrow">Review ' + (s.n + 1) + ' of ' + s.list.length + '</div>' + big(fw) +
       '<button class="btn2" data-act="cs-say" data-id="' + esc(fw.w) + '">' + ic('volume') + ' Hear it</button>' +
       (s.show ? '<div style="font-size:20px;margin:14px 0"><b>' + esc(fw.en) + '</b></div><div class="chips" style="justify-content:center"><button class="btn2" data-act="cs-miss">Missed it</button><button class="btn2 main" data-act="cs-got">Got it</button></div>'
         : '<div style="margin-top:14px"><button class="btn2 main" data-act="cs-reveal">Show meaning</button></div>') + '</div><button class="link" data-act="cs-home">Stop</button>';
   }
+  function dots(n, t) { var h = '<div class="cs-dots">'; for (var i = 1; i <= t; i++) h += '<i' + (i <= n ? ' class="on"' : '') + '></i>'; return h + '</div>'; }
   function demo(set, w) {
     var P = pack(), d = P && P.demo ? P.demo(set, w) : null; if (!d || !d.parts) return '';
     return '<div style="margin-top:14px;text-align:left"><div class="eyebrow" style="margin-bottom:6px">In a sentence</div>' + blocks(d.parts) +
@@ -146,34 +156,37 @@
   /* ---------- tabs ---------- */
   function langChips() {
     var soon = ALL.filter(function (l) { return !PACKS[l[0]]; }).map(function (l) { return l[1]; });
-    return '<div class="chips" style="margin:6px 0">' + ALL.filter(function (l) { return PACKS[l[0]]; }).map(function (l) {
+    return '<div class="cs-tabs" style="margin:6px 0">' + ALL.filter(function (l) { return PACKS[l[0]]; }).map(function (l) {
       return '<button class="tag' + (S.lang === l[0] ? ' on' : '') + '" data-act="cs-lang" data-id="' + l[0] + '" aria-pressed="' + (S.lang === l[0]) + '">' + l[1] + '</button>';
     }).join('') + '</div>' + (soon.length ? '<p class="note" style="margin:0 0 4px">Coming next: ' + soon.join(', ') + '.</p>' : '');
   }
+  function lab(k) { var P = pack(), L = (P && P.labels) || {}; return L[k] === undefined ? (k === 'r' ? 'Reading' : 'Letters') : L[k]; }
   function toggles() {
-    return '<div class="chips" style="margin:6px 0"><span class="sub" style="align-self:center">Show:</span>' + [['r', 'Reading'], ['ro', 'Letters'], ['m', 'Meaning']].map(function (x) {
-      return '<button class="tag' + (S.sh[x[0]] ? ' on' : '') + '" data-act="cs-sh" data-id="' + x[0] + '" aria-pressed="' + (!!S.sh[x[0]]) + '">' + x[1] + '</button>';
+    var P = pack(), list = [];
+    if (!P.noRead) { if (lab('r') !== null) list.push(['r', lab('r')]); if (lab('ro') !== null) list.push(['ro', lab('ro')]); }
+    list.push(['m', 'Meaning']);
+    return '<div class="cs-tabs" style="margin:6px 0"><span class="sub" style="align-self:center">Show:</span>' + list.map(function (x) {
+      return '<button class="tag' + (S.sh[x[0]] ? ' on' : '') + '" data-act="cs-sh" data-id="' + x[0] + '" aria-pressed="' + (!!S.sh[x[0]]) + '">' + esc(x[1]) + '</button>';
     }).join('') + '</div>';
   }
   function setChips() {
     return '<div class="chips" style="margin:6px 0">' + SETS.map(function (s) { return '<button class="tag' + (S.set === s[0] ? ' on' : '') + '" data-act="cs-set" data-id="' + s[0] + '" aria-pressed="' + (S.set === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div>';
   }
   function learnTab() {
-    var P = pack(), d = dueList(), t = today(), done = S.days[t] | 0, sk = streak(), h = '';
-    h += '<div class="card pad" style="padding:10px 14px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>' + esc(P.name) + '</b><span class="sub">' + (sk ? sk + ' day streak · ' : '') + 'Today: ' + done + ' practiced</span></div></div>';
-    h += '<div class="card pad"><div class="eyebrow">Your 400 words</div>' + SETS.map(function (s) {
-      var n = learned(s[0]), tot = words(s[0]).length || 100;
-      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between"><span>' + s[1] + '</span><span class="sub">' + n + ' of ' + tot + '</span></div><div style="height:6px;border-radius:4px;background:var(--card-line);margin-top:4px;overflow:hidden"><div style="width:' + Math.round(n / tot * 100) + '%;height:100%;background:var(--accent)"></div></div></div>';
-    }).join('') + '</div>';
-    h += '<div class="card pad"><div class="eyebrow">Learn 5 new</div>' + setChips() + '<button class="btn2 main" data-act="cs-new">Learn 5 new ' + esc(S.set) + '</button>' +
-      '<p class="note" style="margin-top:8px">Words come in order, most used first. You see each one, then a quick check.</p></div>';
-    h += '<button class="btn2' + (d.length ? ' main' : '') + '" data-act="cs-rev"' + (d.length ? '' : ' disabled style="opacity:.4"') + '>Review ' + d.length + ' due</button>';
+    var P = pack(), d = dueList(), t = today(), done = S.days[t] | 0, sk = streak(), h = '', tot = 0, got = 0, goal = 10, pct = Math.min(100, Math.round(done / goal * 100));
+    SETS.forEach(function (x) { tot += words(x[0]).length; got += learned(x[0]); });
+    h += '<div class="card pad"><div class="cs-top"><div class="cs-ring"><i style="background:conic-gradient(var(--accent) ' + pct + '%,var(--card-line) 0)"></i><span>' + Math.min(done, goal) + '</span></div><div style="flex:1;min-width:0"><div style="font-size:20px;font-weight:700">' + esc(P.name) + '</div><div class="sub">' + got + ' of ' + tot + ' words · ' + (sk ? sk + ' day streak' : 'start a streak today') + '</div><div class="sub">Daily goal: ' + goal + ' practices (' + done + ' so far)</div></div></div></div>';
+    h += d.length ? '<button class="btn2 main" data-act="cs-rev">Review ' + d.length + ' word' + (d.length === 1 ? '' : 's') + ' due</button>' : '<div class="note">Nothing to review right now. Learn some new words below.</div>';
+    h += '<div class="eyebrow" style="margin:14px 0 6px">Learn new words</div><ul class="list">' + SETS.map(function (x) {
+      var n = learned(x[0]), tt = words(x[0]).length || 100;
+      return '<li><button class="card row cs-set" data-act="cs-newset" data-id="' + x[0] + '"><span class="txt"><div class="nm">' + x[1] + '</div><div class="sub">' + n + ' of ' + tt + ' learned</div><div style="height:5px;border-radius:3px;background:var(--card-line);margin-top:6px;overflow:hidden"><div style="width:' + Math.round(n / tt * 100) + '%;height:100%;background:var(--accent)"></div></div></span><span class="pill">' + (n >= tt ? 'Done' : 'Learn 5') + '</span></button></li>';
+    }).join('') + '</ul><p class="note">Words come in order, most used first. You see each one, then a quick check.</p>';
     h += '<button class="btn2" data-act="go" data-to="lang">Chat with Vel in ' + esc(P.name) + '</button>';
     return h;
   }
   function chartTab() {
     var ws = words(S.set), h = setChips() + toggles();
-    h += '<div class="sub" style="margin:2px 0 8px">Cold = new. Hot = you know it well. Most used words come first.</div><div class="cs-grid">';
+    var gotN = learned(S.set); h += '<div class="cs-leg"><span>New</span><i></i><span>Hot</span></div><div class="sub" style="margin:0 0 8px">' + gotN + ' of ' + (ws.length || 100) + ' seen. Most used words come first. Tap one to open it.</div><div class="cs-grid"' + rtl() + '>';
     ws.forEach(function (w, i) { var l = lvl(wid(S.set, i)); h += '<button class="cs-cell' + (sel === i ? ' sel' : '') + '" style="' + heat(l) + '" data-act="cs-cell" data-id="' + i + '" aria-label="' + esc(w.en) + '">' + esc(w.w) + '</button>'; });
     h += '</div>';
     if (sel != null && ws[sel]) {
@@ -227,8 +240,8 @@
       if (!drill) return h + '<p class="note">No practice sentences yet.</p>';
       var d = drill, s = d.s;
       h += '<div class="card pad"><div class="eyebrow">Say it in ' + esc(P.name) + '</div><div style="font-size:20px;margin:8px 0"><b>' + esc(s.en) + '</b></div>' +
-        '<div class="cs-row" style="min-height:58px;padding:8px;border:1px dashed var(--card-line);border-radius:12px">' + (d.put.length ? d.put.map(function (k, n) { return '<button class="cs-pick" data-act="cs-unput" data-id="' + n + '">' + esc(s.t[k][0]) + '</button>'; }).join('') : '<span class="sub">Tap the words below in order</span>') + '</div>' +
-        '<div class="cs-row" style="margin-top:12px">' + d.pool.filter(function (k) { return d.put.indexOf(k) < 0; }).map(function (k) { return '<button class="cs-pick" data-act="cs-put" data-id="' + k + '">' + esc(s.t[k][0]) + '</button>'; }).join('') + '</div>';
+        '<div class="cs-row"' + rtl() + ' style="min-height:58px;padding:8px;border:1px dashed var(--card-line);border-radius:12px">' + (d.put.length ? d.put.map(function (k, n) { return '<button class="cs-pick" data-act="cs-unput" data-id="' + n + '">' + esc(s.t[k][0]) + '</button>'; }).join('') : '<span class="sub">Tap the words below in order</span>') + '</div>' +
+        '<div class="cs-row"' + rtl() + ' style="margin-top:12px">' + d.pool.filter(function (k) { return d.put.indexOf(k) < 0; }).map(function (k) { return '<button class="cs-pick" data-act="cs-put" data-id="' + k + '">' + esc(s.t[k][0]) + '</button>'; }).join('') + '</div>';
       if (d.ok) h += '<div style="margin-top:14px">' + blocks(s.t) + '<div style="margin-top:8px"><b>Correct.</b></div><div class="chips" style="margin-top:8px"><button class="btn2" data-act="cs-say" data-id="' + esc(s.say || s.t.map(function (x) { return x[0]; }).join('')) + '">' + ic('volume') + ' Hear it</button><button class="btn2 main" data-act="cs-dnext">Next sentence</button></div></div></div>';
       else if (d.bad) h += '<div class="note" style="margin-top:10px">Not quite. Remember the order of this language. Tap a word to take it back.</div><button class="btn2" style="margin-top:8px" data-act="cs-dreset">Start again</button></div>';
       else h += '</div>';
@@ -250,11 +263,12 @@
     var el = $('v-course'); if (!el) return;
     var P = pack();
     if (!P) { el.innerHTML = bar(u.BACK_TOOLS, 'Word course') + '<div class="card hero"><span class="chip">' + ic('book') + '</span><h2>No language file found</h2><p>Upload the VELENTIS-course-*.js files to GitHub, rebuild, and install again.</p></div>'; return; }
-    var tabs = [['learn', 'Learn'], ['chart', 'Chart'], ['letters', 'Letters'], ['grammar', 'Grammar'], ['build', 'Build']];
+    var tabs = [['learn', 'Learn'], ['chart', 'Chart'], ['letters', 'Letters'], ['grammar', 'Grammar'], ['build', 'Build']].filter(function (x) { return x[0] !== 'letters' || (P.letters && P.letters.length); });
+    if (tab === 'letters' && !(P.letters && P.letters.length)) tab = 'learn';
     var body;
     if (sess) body = sessionView();
     else {
-      body = '<div class="chips" style="margin:10px 0" role="tablist">' + tabs.map(function (x) { return '<button class="tag' + (tab === x[0] ? ' on' : '') + '" data-act="cs-tab" data-id="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      body = '<div class="cs-tabs" role="tablist">' + tabs.map(function (x) { return '<button class="tag' + (tab === x[0] ? ' on' : '') + '" data-act="cs-tab" data-id="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>' +
         (tab === 'learn' ? learnTab() : tab === 'chart' ? chartTab() : tab === 'letters' ? lettersTab() : tab === 'grammar' ? grammarTab() : buildTab());
     }
     el.innerHTML = bar(u.BACK_TOOLS, 'Word course') + (sess ? '' : langChips()) + body;
@@ -274,6 +288,8 @@
     else if (a === 'sh') { S.sh[id] = S.sh[id] ? 0 : 1; save(); }
     else if (a === 'say') { speak(id); return; }
     else if (a === 'new') { startNew(S.set); }
+    else if (a === 'newset') { S.set = id; startNew(id); }
+    else if (a === 'again') { startNew(S.set); }
     else if (a === 'one') { startOne(S.set, +id); }
     else if (a === 'rev') { startRev(); }
     else if (a === 'home') { sess = null; }
